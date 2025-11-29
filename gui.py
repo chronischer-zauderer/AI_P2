@@ -158,6 +158,7 @@ class Game:
         self.font_medium = pygame.font.Font(None, 32)
         self.font_small = pygame.font.Font(None, 24)
         self.font_tiny = pygame.font.Font(None, 18)
+        self.font_micro = pygame.font.Font(None, 16) # Fuente más pequeña para listas largas
         
         # Estado del juego
         self.game_state = None
@@ -629,48 +630,52 @@ class Game:
     
     def draw_deck_preview(self):
         """Dibuja la vista previa de los mazos (TODAS las cartas)"""
-        # --- TU MAZO (Columna Derecha Completa) ---
-        x_pos = SCREEN_WIDTH - 180
-        y_start = 50
+        # Configuración de visualización
+        y_start = 100 # Empezar más arriba
+        line_height = 15 # Menos espacio entre líneas
+        max_chars = 22 # Más caracteres visibles
+        
+        # --- TU MAZO (Columna Derecha) ---
+        x_pos = SCREEN_WIDTH - 220
         
         deck_label = self.font_tiny.render("TU MAZO (Orden):", True, GOLD)
-        self.screen.blit(deck_label, (x_pos, 20))
+        self.screen.blit(deck_label, (x_pos, y_start - 20))
         
         for i, sprite in enumerate(self.deck_preview_sprites):
-            name = sprite.card.name[:18] # Más caracteres
+            name = sprite.card.name[:max_chars]
             color = WHITE
-            if i == 0: color = GREEN # Próxima carta
+            if i == 0: color = GREEN
             
-            y_pos = y_start + i * 18 # Un poco más de espacio vertical
+            y_pos = y_start + i * line_height
             
-            # Si se sale de la pantalla, parar
+            # Si llegamos al fondo, mostrar aviso y parar
             if y_pos > SCREEN_HEIGHT - 20:
-                more = self.font_tiny.render("...", True, WHITE)
+                more = self.font_micro.render(f"... y {len(self.deck_preview_sprites) - i} más", True, WHITE)
                 self.screen.blit(more, (x_pos, y_pos))
                 break
                 
-            text = self.font_tiny.render(f"{i+1}.{name}", True, color)
+            text = self.font_micro.render(f"{i+1}. {name}", True, color)
             self.screen.blit(text, (x_pos, y_pos))
         
-        # --- MAZO IA (Columna Izquierda Completa) ---
-        x_pos_ai = 10
+        # --- MAZO IA (Columna Izquierda) ---
+        x_pos_ai = 15
         
         ai_deck_label = self.font_tiny.render("MAZO IA (Orden):", True, GOLD)
-        self.screen.blit(ai_deck_label, (x_pos_ai, 20))
+        self.screen.blit(ai_deck_label, (x_pos_ai, y_start - 20))
         
         for i, sprite in enumerate(self.ai_deck_preview_sprites):
-            name = sprite.card.name[:18]
+            name = sprite.card.name[:max_chars]
             color = WHITE
             if i == 0: color = RED
             
-            y_pos = y_start + i * 18
+            y_pos = y_start + i * line_height
             
             if y_pos > SCREEN_HEIGHT - 20:
-                more = self.font_tiny.render("...", True, WHITE)
+                more = self.font_micro.render(f"... y {len(self.ai_deck_preview_sprites) - i} más", True, WHITE)
                 self.screen.blit(more, (x_pos_ai, y_pos))
                 break
                 
-            text = self.font_tiny.render(f"{i+1}.{name}", True, color)
+            text = self.font_micro.render(f"{i+1}. {name}", True, color)
             self.screen.blit(text, (x_pos_ai, y_pos))
     
     def update_button_states(self):
