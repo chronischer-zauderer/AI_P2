@@ -1,0 +1,81 @@
+id,name,type,atk,def,attribute,level
+1,Baby Dragon,Dragon,1200,700,Wind,3
+2,Petit Dragon,Dragon,600,700,Wind,2
+3,Firegrass,Plant,700,600,Earth,2
+4,Crawling Dragon,Dragon,1600,1400,Earth,5
+5,Armored Lizard,Reptile,1500,1200,Earth,4
+6,Mammoth Graveyard,Dinosaur,1200,800,Earth,3
+7,Silver Fang,Beast,1200,800,Earth,3
+8,Battle Ox,Beast-Warrior,1700,1000,Earth,4
+9,Mystic Horseman,Beast,1300,1550,Earth,4
+10,Koumori Dragon,Dragon,1500,1200,Dark,4
+11,One-Eyed Shield Dragon,Dragon,700,1300,Wind,3
+12,Hitotsu-Me Giant,Beast-Warrior,1200,1000,Earth,4
+13,Two-Headed King Rex,Dinosaur,1600,1200,Earth,4
+14,Crawling Dragon #2,Dinosaur,1600,1200,Earth,4
+15,Mystical Elf,Spellcaster,800,2000,Light,4
+16,Ancient Elf,Spellcaster,1450,1200,Light,4
+17,Armaill,Warrior,700,1300,Earth,3
+18,Celtic Guardian,Warrior,1400,1200,Earth,4
+19,Dark Magician,Spellcaster,2500,2100,Dark,7
+20,Red-Eyes B. Dragon,Dragon,2400,2000,Dark,7
+21,Summoned Skull,Fiend,2500,1200,Dark,6
+22,Gaia the Fierce Knight,Warrior,2300,2100,Earth,7
+23,Curse of Dragon,Dragon,2000,1500,Dark,5
+24,Giant Soldier of Stone,Rock,1300,2000,Earth,3
+25,Feral Imp,Fiend,1300,1400,Dark,4
+26,Dark Gray,Beast,800,900,Earth,3
+27,Wolf,Beast,1200,800,Earth,3
+28,Ryu-Kishin,Fiend,1000,500,Dark,3
+29,Firewing Pegasus,Beast,2250,1800,Fire,6
+30,Harpie Lady,Winged-Beast,1300,1400,Wind,4
+31,Kairyu-Shin,Sea-Serpent,1800,1500,Water,5
+32,Spike Seadra,Sea-Serpent,1600,1300,Water,5
+33,Great White,Fish,1600,800,Water,4
+34,Aqua Madoor,Spellcaster,1200,2000,Water,4
+35,Giant Red Seasnake,Aqua,1800,800,Water,4
+36,7 Colored Fish,Fish,1800,800,Water,4
+37,Root Water,Fish,900,800,Water,3
+38,Killer Needle,Insect,1200,1000,Wind,4
+39,Big Insect,Insect,1200,1500,Earth,4
+40,Hercules Beetle,Insect,1500,2000,Earth,5
+41,Petit Moth,Insect,300,200,Earth,1
+42,Hunter Spider,Insect,1600,1400,Earth,5
+43,Kumootoko,Insect,700,1400,Earth,3
+44,La Jinn the Mystical Genie of the Lamp,Fiend,1800,1000,Dark,4
+45,Dark King of the Abyss,Fiend,1200,800,Dark,3
+46,Flame Cerberus,Pyro,2100,1800,Fire,6
+47,Darkfire Soldier #1,Pyro,1700,1150,Fire,4
+48,Mr. Volcano,Pyro,2100,1300,Fire,5
+49,Judge Man,Warrior,2200,1500,Earth,6
+50,Kojikocy,Warrior,1500,1200,Earth,4
+51,Tiger Axe,Beast-Warrior,1300,1100,Earth,4
+52,Beaver Warrior,Beast-Warrior,1200,1500,Earth,4
+53,Gazelle the King of Mythical Beasts,Beast,1500,1200,Earth,4
+54,Launcher Spider,Machine,2200,2500,Fire,7
+55,Mechanical Snail,Machine,800,1000,Dark,3
+56,Steel Ogre Grotto #1,Machine,1400,1800,Earth,5
+57,Blocker,Machine,850,1800,Dark,4
+58,Neo Bug,Insect,1800,1700,Earth,4
+59,Dungeon Worm,Insect,1800,1500,Earth,5
+60,Meteor Dragon,Dragon,1800,2000,Earth,6
+61,Blue-Eyes White Dragon,Dragon,3000,2500,Light,8
+62,Tri-Horned Dragon,Dragon,2850,2350,Dark,8
+63,Axe Raider,Warrior,1700,1150,Earth,4
+64,Beautiful Headhuntress,Warrior,1600,800,Earth,4
+65,Baron of the Fiend Sword,Fiend,1550,800,Dark,4
+66,Man-Eater Bug,Insect,450,600,Earth,2
+67,Sangan,Fiend,1000,600,Dark,3
+68,Witch of the Black Forest,Spellcaster,1100,1200,Dark,4
+69,Lord of D.,Spellcaster,1200,1100,Dark,4
+70,Time Wizard,Spellcaster,500,400,Light,2
+71,Mystic Clown,Fiend,1500,1000,Dark,4
+72,Ogre of the Black Shadow,Beast-Warrior,1200,1400,Earth,4
+73,Battle Steer,Beast-Warrior,1800,1300,Earth,5
+74,Blackland Fire Dragon,Dragon,1500,800,Dark,4
+75,Lesser Dragon,Dragon,1200,1000,Wind,4
+76,Winged Dragon Guardian of the Fortress,Dragon,1400,1200,Wind,4
+77,Skull Red Bird,Winged-Beast,1550,1200,Wind,4
+78,Faith Bird,Winged-Beast,1500,1100,Wind,4
+79,Tyhone,Winged-Beast,1200,1400,Wind,4
+80,Parrot Dragon,Dragon,2000,1300,Wind,5
