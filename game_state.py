@@ -357,6 +357,10 @@ class GameState:
         if not actions:
             actions.append({"type": "pass"})
         
+        # Si ya tiene carta en campo, agregar opción de pasar (mantener carta)
+        if player.field is not None:
+            actions.append({"type": "pass"})
+        
         return actions
     
     def apply_action(self, player, action):

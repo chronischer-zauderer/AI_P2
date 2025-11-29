@@ -176,3 +176,5 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 verify_fusions.py
+test_logic.py
+test_simulation.py
