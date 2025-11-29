@@ -272,19 +272,17 @@ class Game:
         
         # Preview de mazos
         self.deck_preview_sprites = []
-        upcoming = self.game_state.get_visible_upcoming_cards(self.game_state.human, 3)
+        # Mostrar TODAS las cartas restantes (requisito de información perfecta)
+        upcoming = self.game_state.get_visible_upcoming_cards(self.game_state.human, 100)
         for i, card in enumerate(upcoming):
-            sprite = CardSprite(card, SCREEN_WIDTH - 100, 
-                              SCREEN_HEIGHT // 2 + 100 + i * 35,
-                              70, 30)
+            # Posición placeholder, se dibuja en draw_deck_preview
+            sprite = CardSprite(card, 0, 0, 0, 0)
             self.deck_preview_sprites.append(sprite)
         
         self.ai_deck_preview_sprites = []
-        ai_upcoming = self.game_state.get_visible_upcoming_cards(self.game_state.ai, 3)
+        ai_upcoming = self.game_state.get_visible_upcoming_cards(self.game_state.ai, 100)
         for i, card in enumerate(ai_upcoming):
-            sprite = CardSprite(card, 30, 
-                              SCREEN_HEIGHT // 2 - 50 + i * 35,
-                              70, 30)
+            sprite = CardSprite(card, 0, 0, 0, 0)
             self.ai_deck_preview_sprites.append(sprite)
     
     def handle_card_click(self, pos):
@@ -547,33 +545,41 @@ class Game:
         # Indicador de turno
         turn_text = "TU TURNO" if self.game_state.current_player == self.game_state.human else "TURNO IA"
         turn_surface = self.font_medium.render(turn_text, True, GREEN if "TU" in turn_text else RED)
-        self.screen.blit(turn_surface, (SCREEN_WIDTH - 150, SCREEN_HEIGHT // 2 - 20))
+        # Ya se dibuja en draw_player_info, eliminar de aquí para evitar duplicados o solapamientos
+        # self.screen.blit(turn_surface, (SCREEN_WIDTH - 300, SCREEN_HEIGHT // 2 - 20))
     
     def draw_player_info(self):
-        """Dibuja información de los jugadores"""
-        # Jugador humano (abajo)
-        human_lp = self.font_medium.render(f"LP: {self.game_state.human.life_points}", True, GREEN)
-        self.screen.blit(human_lp, (20, SCREEN_HEIGHT - 250))
+        """Dibuja información de los jugadores (Reubicado al centro)"""
+        # Centro de la pantalla
+        center_x = SCREEN_WIDTH // 2
         
+        # --- JUGADOR HUMANO (Abajo, cerca de su campo) ---
+        # LP a la izquierda del campo
+        human_lp = self.font_medium.render(f"LP: {self.game_state.human.life_points}", True, GREEN)
+        self.screen.blit(human_lp, (center_x - 350, SCREEN_HEIGHT - 200))
+        
+        # Stats a la derecha del campo
         human_deck = self.font_small.render(f"Mazo: {len(self.game_state.human.deck)}", True, WHITE)
-        self.screen.blit(human_deck, (20, SCREEN_HEIGHT - 220))
+        self.screen.blit(human_deck, (center_x + 250, SCREEN_HEIGHT - 200))
         
         human_grave = self.font_small.render(f"Cementerio: {len(self.game_state.human.graveyard)}", True, GRAY)
-        self.screen.blit(human_grave, (20, SCREEN_HEIGHT - 195))
+        self.screen.blit(human_grave, (center_x + 250, SCREEN_HEIGHT - 175))
         
-        # IA (arriba)
+        # --- IA (Arriba, cerca de su campo) ---
+        # LP a la izquierda del campo
         ai_lp = self.font_medium.render(f"LP: {self.game_state.ai.life_points}", True, RED)
-        self.screen.blit(ai_lp, (20, 130))
+        self.screen.blit(ai_lp, (center_x - 350, 150))
         
+        # Stats a la derecha del campo
         ai_deck = self.font_small.render(f"Mazo: {len(self.game_state.ai.deck)}", True, WHITE)
-        self.screen.blit(ai_deck, (20, 160))
+        self.screen.blit(ai_deck, (center_x + 250, 150))
         
         ai_grave = self.font_small.render(f"Cementerio: {len(self.game_state.ai.graveyard)}", True, GRAY)
-        self.screen.blit(ai_grave, (20, 185))
+        self.screen.blit(ai_grave, (center_x + 250, 175))
         
-        # Turno
+        # Turno (Centro absoluto)
         turn = self.font_small.render(f"Turno: {self.game_state.turn_number}", True, GOLD)
-        self.screen.blit(turn, (SCREEN_WIDTH - 100, 130))
+        self.screen.blit(turn, (center_x - 30, 20))
     
     def draw_field(self):
         """Dibuja el campo de batalla"""
@@ -615,32 +621,57 @@ class Game:
         
         # Etiqueta mano IA
         ai_hand_label = self.font_small.render("Mano IA (visible):", True, WHITE)
-        self.screen.blit(ai_hand_label, (50, 130))
+        self.screen.blit(ai_hand_label, (SCREEN_WIDTH // 2 - 60, 10)) # Centrado arriba
         
         # Mano de la IA
         for sprite in self.ai_hand_sprites:
             sprite.draw(self.screen, self.font_small, self.font_tiny)
     
     def draw_deck_preview(self):
-        """Dibuja la vista previa de los mazos"""
-        # Tu mazo
-        deck_label = self.font_tiny.render("Próximas cartas:", True, GOLD)
-        self.screen.blit(deck_label, (SCREEN_WIDTH - 120, SCREEN_HEIGHT // 2 + 70))
+        """Dibuja la vista previa de los mazos (TODAS las cartas)"""
+        # --- TU MAZO (Columna Derecha Completa) ---
+        x_pos = SCREEN_WIDTH - 180
+        y_start = 50
+        
+        deck_label = self.font_tiny.render("TU MAZO (Orden):", True, GOLD)
+        self.screen.blit(deck_label, (x_pos, 20))
         
         for i, sprite in enumerate(self.deck_preview_sprites):
-            # Solo mostrar nombre
-            name = sprite.card.name[:10]
-            text = self.font_tiny.render(f"{i+1}. {name}", True, WHITE)
-            self.screen.blit(text, (SCREEN_WIDTH - 120, SCREEN_HEIGHT // 2 + 95 + i * 20))
+            name = sprite.card.name[:18] # Más caracteres
+            color = WHITE
+            if i == 0: color = GREEN # Próxima carta
+            
+            y_pos = y_start + i * 18 # Un poco más de espacio vertical
+            
+            # Si se sale de la pantalla, parar
+            if y_pos > SCREEN_HEIGHT - 20:
+                more = self.font_tiny.render("...", True, WHITE)
+                self.screen.blit(more, (x_pos, y_pos))
+                break
+                
+            text = self.font_tiny.render(f"{i+1}.{name}", True, color)
+            self.screen.blit(text, (x_pos, y_pos))
         
-        # Mazo IA
-        ai_deck_label = self.font_tiny.render("Próximas IA:", True, GOLD)
-        self.screen.blit(ai_deck_label, (20, SCREEN_HEIGHT // 2 - 100))
+        # --- MAZO IA (Columna Izquierda Completa) ---
+        x_pos_ai = 10
+        
+        ai_deck_label = self.font_tiny.render("MAZO IA (Orden):", True, GOLD)
+        self.screen.blit(ai_deck_label, (x_pos_ai, 20))
         
         for i, sprite in enumerate(self.ai_deck_preview_sprites):
-            name = sprite.card.name[:10]
-            text = self.font_tiny.render(f"{i+1}. {name}", True, WHITE)
-            self.screen.blit(text, (20, SCREEN_HEIGHT // 2 - 75 + i * 20))
+            name = sprite.card.name[:18]
+            color = WHITE
+            if i == 0: color = RED
+            
+            y_pos = y_start + i * 18
+            
+            if y_pos > SCREEN_HEIGHT - 20:
+                more = self.font_tiny.render("...", True, WHITE)
+                self.screen.blit(more, (x_pos_ai, y_pos))
+                break
+                
+            text = self.font_tiny.render(f"{i+1}.{name}", True, color)
+            self.screen.blit(text, (x_pos_ai, y_pos))
     
     def update_button_states(self):
         """Actualiza el estado de los botones según el contexto"""
