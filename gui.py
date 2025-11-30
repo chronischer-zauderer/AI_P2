@@ -14,9 +14,16 @@ from cards import (
 # Inicializar Pygame
 pygame.init()
 
-# Constantes de pantalla
-SCREEN_WIDTH = 1400
-SCREEN_HEIGHT = 900
+# Configuración de pantalla dinámica
+info = pygame.display.Info()
+# Usar 90% del tamaño de pantalla disponible
+SCREEN_WIDTH = int(info.current_w * 0.9)
+SCREEN_HEIGHT = int(info.current_h * 0.9)
+
+# Asegurar dimensiones mínimas
+SCREEN_WIDTH = max(1024, SCREEN_WIDTH)
+SCREEN_HEIGHT = max(700, SCREEN_HEIGHT)
+
 FPS = 60
 
 # Colores
@@ -51,11 +58,11 @@ STAR_COLORS = {
     "Neptuno": (0, 191, 255)
 }
 
-# Tamaños de carta
-CARD_WIDTH = 100
-CARD_HEIGHT = 140
-SMALL_CARD_WIDTH = 80
-SMALL_CARD_HEIGHT = 112
+# Tamaños de carta dinámicos (Ajustados para evitar superposición)
+CARD_HEIGHT = int(SCREEN_HEIGHT * 0.18)  # Reducido de 0.22 a 0.18
+CARD_WIDTH = int(CARD_HEIGHT * 0.72)     # Mantener proporción
+SMALL_CARD_HEIGHT = int(CARD_HEIGHT * 0.7) # Un poco más grandes las pequeñas
+SMALL_CARD_WIDTH = int(CARD_WIDTH * 0.7)
 
 class Button:
     """Clase para botones de la interfaz"""
@@ -107,12 +114,20 @@ class CardSprite:
             pygame.draw.rect(screen, DARK_BLUE, inner_rect, border_radius=3)
         else:
             # Fondo de carta según posición
-            bg_color = DARK_GREEN if self.card.position == "ATK" else DARK_BLUE
+            bg_color = (30, 30, 30) # Fondo oscuro neutro
             pygame.draw.rect(screen, bg_color, self.rect, border_radius=5)
             
-            # Borde (dorado si seleccionada)
-            border_color = GOLD if self.selected else WHITE
-            border_width = 3 if self.selected or self.hover else 2
+            # Borde (dorado si seleccionada, verde/azul según posición)
+            if self.selected:
+                border_color = GOLD
+                border_width = 3
+            elif self.hover:
+                border_color = WHITE
+                border_width = 2
+            else:
+                border_color = GREEN if self.card.position == "ATK" else BLUE
+                border_width = 2
+                
             pygame.draw.rect(screen, border_color, self.rect, border_width, border_radius=5)
             
             # Nombre de la carta
@@ -132,16 +147,31 @@ class CardSprite:
             star_rect = star_text.get_rect(center=img_rect.center)
             screen.blit(star_text, star_rect)
             
-            # ATK/DEF
-            atk_text = font_tiny.render(f"ATK:{self.card.atk}", True, RED)
-            def_text = font_tiny.render(f"DEF:{self.card.defense}", True, BLUE)
+            # ATK/DEF con fondo para legibilidad
+            stats_y = self.rect.bottom - 40
             
-            screen.blit(atk_text, (self.rect.x + 5, self.rect.bottom - 35))
-            screen.blit(def_text, (self.rect.x + 5, self.rect.bottom - 20))
+            # ATK
+            atk_bg = pygame.Rect(self.rect.x + 5, stats_y, self.rect.width - 10, 15)
+            pygame.draw.rect(screen, (50, 0, 0), atk_bg, border_radius=2)
+            atk_text = font_tiny.render(f"ATK: {self.card.atk}", True, (255, 100, 100))
+            screen.blit(atk_text, (self.rect.x + 7, stats_y + 2))
             
-            # Indicador de posición
-            pos_text = font_tiny.render(self.card.position, True, YELLOW)
-            screen.blit(pos_text, (self.rect.right - 30, self.rect.bottom - 20))
+            # DEF
+            def_bg = pygame.Rect(self.rect.x + 5, stats_y + 17, self.rect.width - 10, 15)
+            pygame.draw.rect(screen, (0, 0, 50), def_bg, border_radius=2)
+            def_text = font_tiny.render(f"DEF: {self.card.defense}", True, (100, 100, 255))
+            screen.blit(def_text, (self.rect.x + 7, stats_y + 19))
+            
+            # Indicador de posición (pequeño icono)
+            pos_color = GREEN if self.card.position == "ATK" else BLUE
+            pos_rect = pygame.Rect(self.rect.right - 20, self.rect.top + 5, 15, 15)
+            pygame.draw.circle(screen, pos_color, pos_rect.center, 6)
+            pygame.draw.circle(screen, WHITE, pos_rect.center, 6, 1)
+            
+            pos_char = "A" if self.card.position == "ATK" else "D"
+            pos_text = font_tiny.render(pos_char, True, WHITE)
+            pos_text_rect = pos_text.get_rect(center=pos_rect.center)
+            screen.blit(pos_text, pos_text_rect)
     
     def check_click(self, pos):
         return self.rect.collidepoint(pos)
@@ -149,23 +179,23 @@ class CardSprite:
 class Game:
     """Clase principal del juego"""
     def __init__(self):
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption("Yu-Gi-Oh! Forbidden Memories - Minimax AI")
         self.clock = pygame.time.Clock()
         
         # Fuentes
-        self.font_large = pygame.font.Font(None, 48)
-        self.font_medium = pygame.font.Font(None, 32)
-        self.font_small = pygame.font.Font(None, 24)
-        self.font_tiny = pygame.font.Font(None, 18)
-        self.font_micro = pygame.font.Font(None, 16) # Fuente más pequeña para listas largas
+        self.font_large = pygame.font.Font(None, int(SCREEN_HEIGHT * 0.06))
+        self.font_medium = pygame.font.Font(None, int(SCREEN_HEIGHT * 0.04))
+        self.font_small = pygame.font.Font(None, int(SCREEN_HEIGHT * 0.03))
+        self.font_tiny = pygame.font.Font(None, int(SCREEN_HEIGHT * 0.022))
+        self.font_micro = pygame.font.Font(None, int(SCREEN_HEIGHT * 0.018))
         
         # Estado del juego
         self.game_state = None
         self.ai = MinimaxAI(max_depth=3)
         
         # Estado de la UI
-        self.state = "MENU"  # MENU, CONFIG, GAME, GAME_OVER
+        self.state = "MENU"  # MENU, CONFIG, GAME, GAME_OVER, DECK_VIEW
         self.deck_size = 20
         self.selected_card_index = None
         self.fusion_mode = False
@@ -174,6 +204,7 @@ class Game:
         self.message_timer = 0
         self.ai_thinking = False
         self.waiting_for_battle = False
+        self.card_played_this_turn = False # Para controlar el deshacer
         
         # Botones del menú
         self.setup_menu_buttons()
@@ -190,28 +221,44 @@ class Game:
         """Configura los botones del menú principal"""
         center_x = SCREEN_WIDTH // 2
         
-        self.btn_play = Button(center_x - 100, 300, 200, 50, "JUGAR", GREEN)
-        self.btn_config = Button(center_x - 100, 370, 200, 50, "CONFIGURACIÓN", BLUE)
-        self.btn_rules = Button(center_x - 100, 440, 200, 50, "REGLAS", PURPLE)
-        self.btn_exit = Button(center_x - 100, 510, 200, 50, "SALIR", RED)
+        # Menú principal
+        self.btn_play = Button(center_x - 100, SCREEN_HEIGHT * 0.3, 200, 50, "JUGAR", GREEN)
+        self.btn_config = Button(center_x - 100, SCREEN_HEIGHT * 0.3 + 70, 200, 50, "CONFIGURACIÓN", BLUE)
+        self.btn_rules = Button(center_x - 100, SCREEN_HEIGHT * 0.3 + 140, 200, 50, "REGLAS", PURPLE)
+        self.btn_exit = Button(center_x - 100, SCREEN_HEIGHT * 0.3 + 210, 200, 50, "SALIR", RED)
         
         # Botones de configuración
-        self.btn_deck_minus = Button(center_x - 150, 350, 50, 40, "-", RED)
-        self.btn_deck_plus = Button(center_x + 100, 350, 50, 40, "+", GREEN)
-        self.btn_back = Button(center_x - 100, 500, 200, 50, "VOLVER", GRAY)
+        self.btn_deck_minus = Button(center_x - 150, SCREEN_HEIGHT * 0.4, 50, 40, "-", RED)
+        self.btn_deck_plus = Button(center_x + 100, SCREEN_HEIGHT * 0.4, 50, 40, "+", GREEN)
+        self.btn_back = Button(center_x - 100, SCREEN_HEIGHT * 0.6, 200, 50, "VOLVER", GRAY)
         
-        # Botones del juego
-        self.btn_play_card = Button(50, SCREEN_HEIGHT - 70, 120, 40, "JUGAR", GREEN)
-        self.btn_fuse = Button(180, SCREEN_HEIGHT - 70, 120, 40, "FUSIONAR", PURPLE)
-        self.btn_position = Button(310, SCREEN_HEIGHT - 70, 120, 40, "POS: ATK", BLUE)
-        self.btn_star = Button(440, SCREEN_HEIGHT - 70, 120, 40, "ESTRELLA 1", ORANGE)
-        self.btn_battle = Button(570, SCREEN_HEIGHT - 70, 120, 40, "BATALLA", RED)
-        self.btn_end_turn = Button(700, SCREEN_HEIGHT - 70, 120, 40, "FIN TURNO", GRAY)
+        # Botones del juego - Centrados y organizados
+        btn_width = int(SCREEN_WIDTH * 0.1) # 10% del ancho
+        btn_height = int(SCREEN_HEIGHT * 0.05) # Altura relativa
+        spacing = 15 # Más espacio entre botones
+        
+        # Botón extra para ver mazos y deshacer
+        total_buttons = 8
+        total_width = (btn_width * total_buttons) + (spacing * (total_buttons - 1))
+        start_x = (SCREEN_WIDTH - total_width) // 2
+        y_pos = SCREEN_HEIGHT - btn_height - 20 # Margen inferior
+        
+        self.btn_play_card = Button(start_x, y_pos, btn_width, btn_height, "JUGAR", GREEN)
+        self.btn_fuse = Button(start_x + (btn_width + spacing), y_pos, btn_width, btn_height, "FUSIONAR", PURPLE)
+        self.btn_position = Button(start_x + (btn_width + spacing) * 2, y_pos, btn_width, btn_height, "POS: ATK", BLUE)
+        self.btn_star = Button(start_x + (btn_width + spacing) * 3, y_pos, btn_width, btn_height, "ESTRELLA 1", ORANGE)
+        self.btn_battle = Button(start_x + (btn_width + spacing) * 4, y_pos, btn_width, btn_height, "BATALLA", RED)
+        self.btn_view_decks = Button(start_x + (btn_width + spacing) * 5, y_pos, btn_width, btn_height, "VER MAZOS", CYAN)
+        self.btn_undo = Button(start_x + (btn_width + spacing) * 6, y_pos, btn_width, btn_height, "DESHACER", YELLOW)
+        self.btn_end_turn = Button(start_x + (btn_width + spacing) * 7, y_pos, btn_width, btn_height, "FIN TURNO", GRAY)
         
         self.menu_buttons = [self.btn_play, self.btn_config, self.btn_rules, self.btn_exit]
         self.config_buttons = [self.btn_deck_minus, self.btn_deck_plus, self.btn_back]
         self.game_buttons = [self.btn_play_card, self.btn_fuse, self.btn_position, 
-                            self.btn_star, self.btn_battle, self.btn_end_turn]
+                            self.btn_star, self.btn_battle, self.btn_view_decks, self.btn_undo, self.btn_end_turn]
+        
+        # Botón volver en vista de mazos
+        self.btn_close_decks = Button(center_x - 100, SCREEN_HEIGHT - 80, 200, 50, "VOLVER AL JUEGO", GRAY)
     
     def start_game(self):
         """Inicia una nueva partida"""
@@ -224,6 +271,7 @@ class Game:
         self.message = "¡Tu turno! Selecciona una carta para jugar."
         self.message_timer = 180
         self.waiting_for_battle = False
+        self.card_played_this_turn = False
         self.update_card_sprites()
         print(f"[Juego] Partida iniciada con {self.deck_size} cartas por mazo")
         print(f"[Juego] Total de cartas disponibles: {len(CARD_DATABASE)}")
@@ -234,19 +282,36 @@ class Game:
         # Mano del jugador
         self.hand_sprites = []
         hand = self.game_state.human.hand
-        start_x = (SCREEN_WIDTH - len(hand) * (CARD_WIDTH + 10)) // 2
+        
+        # Espaciado entre cartas
+        card_spacing = 20
+        
+        # Centrar mano dinámicamente
+        total_hand_width = len(hand) * CARD_WIDTH + (len(hand) - 1) * card_spacing
+        start_x = (SCREEN_WIDTH - total_hand_width) // 2
+        
+        # Posición Y calculada para estar entre el campo y los botones
+        # Campo termina aprox en SCREEN_HEIGHT/2 + CARD_HEIGHT + 30
+        # Botones empiezan en SCREEN_HEIGHT - btn_height - 20
+        # Ponemos la mano un poco más arriba de los botones
+        hand_y = SCREEN_HEIGHT - int(SCREEN_HEIGHT * 0.05) - 40 - CARD_HEIGHT
+        
         for i, card in enumerate(hand):
-            sprite = CardSprite(card, start_x + i * (CARD_WIDTH + 10), 
-                              SCREEN_HEIGHT - 220, CARD_WIDTH, CARD_HEIGHT)
+            sprite = CardSprite(card, start_x + i * (CARD_WIDTH + card_spacing), 
+                              hand_y, CARD_WIDTH, CARD_HEIGHT)
             self.hand_sprites.append(sprite)
         
         # Mano de la IA (visible en esta versión)
         self.ai_hand_sprites = []
         ai_hand = self.game_state.ai.hand
-        start_x = (SCREEN_WIDTH - len(ai_hand) * (SMALL_CARD_WIDTH + 5)) // 2
+        
+        ai_card_spacing = 10
+        total_ai_hand_width = len(ai_hand) * SMALL_CARD_WIDTH + (len(ai_hand) - 1) * ai_card_spacing
+        start_x = (SCREEN_WIDTH - total_ai_hand_width) // 2
+        
         for i, card in enumerate(ai_hand):
-            sprite = CardSprite(card, start_x + i * (SMALL_CARD_WIDTH + 5), 
-                              10, SMALL_CARD_WIDTH, SMALL_CARD_HEIGHT)
+            sprite = CardSprite(card, start_x + i * (SMALL_CARD_WIDTH + ai_card_spacing), 
+                              20, SMALL_CARD_WIDTH, SMALL_CARD_HEIGHT)
             self.ai_hand_sprites.append(sprite)
         
         # Campo del jugador
@@ -271,7 +336,7 @@ class Game:
         else:
             self.ai_field_sprite = None
         
-        # Preview de mazos
+        # Preview de mazos (Solo para vista rápida lateral si cabe)
         self.deck_preview_sprites = []
         # Mostrar TODAS las cartas restantes (requisito de información perfecta)
         upcoming = self.game_state.get_visible_upcoming_cards(self.game_state.human, 100)
@@ -298,6 +363,15 @@ class Game:
                     elif i != self.fusion_first_card:
                         # Intentar fusión
                         hand = self.game_state.human.hand
+                        
+                        # Validar índices antes de acceder
+                        if self.fusion_first_card >= len(hand) or i >= len(hand):
+                            self.message = "Error: Carta no válida"
+                            self.fusion_mode = False
+                            self.fusion_first_card = None
+                            self.update_card_sprites()
+                            return
+
                         result = check_fusion_by_cards(hand[self.fusion_first_card], hand[i])
                         if result:
                             fused = self.game_state.human.fuse_cards(self.fusion_first_card, i)
@@ -326,16 +400,23 @@ class Game:
             position = "ATK" if "ATK" in self.btn_position.text else "DEF"
             star = 1 if "1" in self.btn_star.text else 2
             
-            self.game_state.human.play_card(self.selected_card_index, position, star)
-            self.selected_card_index = None
-            self.update_card_sprites()
-            
-            # Si hay cartas en ambos campos, esperar para batalla
-            if self.game_state.human.field and self.game_state.ai.field:
-                self.waiting_for_battle = True
-                self.message = "¡Cartas listas! Presiona BATALLA para combatir"
-            else:
-                self.message = "Carta jugada. Puedes terminar tu turno."
+            success = self.game_state.human.play_card(self.selected_card_index, position, star)
+            if success:
+                self.card_played_this_turn = True
+                self.selected_card_index = None
+                
+                # Resetear estado de fusión por seguridad
+                self.fusion_mode = False
+                self.fusion_first_card = None
+                
+                self.update_card_sprites()
+                
+                # Si hay cartas en ambos campos, esperar para batalla
+                if self.game_state.human.field and self.game_state.ai.field:
+                    self.waiting_for_battle = True
+                    self.message = "¡Cartas listas! Presiona BATALLA para combatir"
+                else:
+                    self.message = "Carta jugada. Puedes terminar tu turno."
     
     def resolve_battle(self):
         """Resuelve la batalla entre cartas"""
@@ -358,6 +439,7 @@ class Game:
     
     def end_turn(self):
         """Termina el turno del jugador"""
+        self.card_played_this_turn = False
         self.game_state.next_turn()
         self.ai_turn()
     
@@ -539,8 +621,17 @@ class Game:
         # Mensaje
         if self.message:
             msg_surface = self.font_medium.render(self.message, True, YELLOW)
-            msg_rect = msg_surface.get_rect(centerx=SCREEN_WIDTH // 2, y=SCREEN_HEIGHT // 2 - 80)
-            pygame.draw.rect(self.screen, BLACK, msg_rect.inflate(20, 10))
+            # Mover mensaje arriba, entre la mano de la IA y el campo de la IA
+            # Esto evita que tape las estadísticas o el campo
+            msg_rect = msg_surface.get_rect(centerx=SCREEN_WIDTH // 2, y=210)
+            
+            # Fondo semi-transparente
+            bg_rect = msg_rect.inflate(40, 20)
+            s = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+            pygame.draw.rect(s, (0, 0, 0, 230), s.get_rect(), border_radius=10)
+            pygame.draw.rect(s, GOLD, s.get_rect(), 2, border_radius=10)
+            self.screen.blit(s, bg_rect)
+            
             self.screen.blit(msg_surface, msg_rect)
         
         # Indicador de turno
@@ -550,37 +641,42 @@ class Game:
         # self.screen.blit(turn_surface, (SCREEN_WIDTH - 300, SCREEN_HEIGHT // 2 - 20))
     
     def draw_player_info(self):
-        """Dibuja información de los jugadores (Reubicado al centro)"""
-        # Centro de la pantalla
+        """Dibuja información de los jugadores"""
         center_x = SCREEN_WIDTH // 2
         
-        # --- JUGADOR HUMANO (Abajo, cerca de su campo) ---
-        # LP a la izquierda del campo
-        human_lp = self.font_medium.render(f"LP: {self.game_state.human.life_points}", True, GREEN)
-        self.screen.blit(human_lp, (center_x - 350, SCREEN_HEIGHT - 200))
+        # Distancia desde el centro para los textos
+        offset_x = int(SCREEN_WIDTH * 0.25)
         
-        # Stats a la derecha del campo
+        # --- JUGADOR HUMANO ---
+        # LP cerca de su zona de campo
+        human_lp = self.font_medium.render(f"LP: {self.game_state.human.life_points}", True, GREEN)
+        # Posicionar a la izquierda de la zona de campo
+        self.screen.blit(human_lp, (center_x - offset_x - 100, SCREEN_HEIGHT // 2 + 50))
+        
+        # Stats del mazo (derecha)
         human_deck = self.font_small.render(f"Mazo: {len(self.game_state.human.deck)}", True, WHITE)
-        self.screen.blit(human_deck, (center_x + 250, SCREEN_HEIGHT - 200))
+        self.screen.blit(human_deck, (center_x + offset_x, SCREEN_HEIGHT // 2 + 50))
         
         human_grave = self.font_small.render(f"Cementerio: {len(self.game_state.human.graveyard)}", True, GRAY)
-        self.screen.blit(human_grave, (center_x + 250, SCREEN_HEIGHT - 175))
+        self.screen.blit(human_grave, (center_x + offset_x, SCREEN_HEIGHT // 2 + 80))
         
-        # --- IA (Arriba, cerca de su campo) ---
-        # LP a la izquierda del campo
+        # --- IA ---
+        # LP cerca de su zona de campo
         ai_lp = self.font_medium.render(f"LP: {self.game_state.ai.life_points}", True, RED)
-        self.screen.blit(ai_lp, (center_x - 350, 150))
+        # Posicionar a la derecha de la zona de campo (simetría inversa)
+        self.screen.blit(ai_lp, (center_x + offset_x, SCREEN_HEIGHT // 2 - 80))
         
-        # Stats a la derecha del campo
+        # Stats del mazo (izquierda)
         ai_deck = self.font_small.render(f"Mazo: {len(self.game_state.ai.deck)}", True, WHITE)
-        self.screen.blit(ai_deck, (center_x + 250, 150))
+        self.screen.blit(ai_deck, (center_x - offset_x - 100, SCREEN_HEIGHT // 2 - 80))
         
         ai_grave = self.font_small.render(f"Cementerio: {len(self.game_state.ai.graveyard)}", True, GRAY)
-        self.screen.blit(ai_grave, (center_x + 250, 175))
+        self.screen.blit(ai_grave, (center_x - offset_x - 100, SCREEN_HEIGHT // 2 - 50))
         
-        # Turno (Centro absoluto)
+        # Turno (Debajo de la mano de la IA para no tapar cartas)
         turn = self.font_small.render(f"Turno: {self.game_state.turn_number}", True, GOLD)
-        self.screen.blit(turn, (center_x - 30, 20))
+        turn_rect = turn.get_rect(centerx=center_x, y=SMALL_CARD_HEIGHT + 40)
+        self.screen.blit(turn, turn_rect)
     
     def draw_field(self):
         """Dibuja el campo de batalla"""
@@ -588,12 +684,18 @@ class Game:
         player_zone = pygame.Rect(SCREEN_WIDTH // 2 - CARD_WIDTH - 30, 
                                   SCREEN_HEIGHT // 2 + 10,
                                   CARD_WIDTH + 20, CARD_HEIGHT + 20)
+        
+        # Fondo de la zona
+        pygame.draw.rect(self.screen, (30, 50, 30), player_zone, border_radius=5)
         pygame.draw.rect(self.screen, DARK_GREEN, player_zone, 2, border_radius=5)
         
         # Zona de campo de la IA
         ai_zone = pygame.Rect(SCREEN_WIDTH // 2 + 10,
                               SCREEN_HEIGHT // 2 - CARD_HEIGHT - 30,
                               CARD_WIDTH + 20, CARD_HEIGHT + 20)
+        
+        # Fondo de la zona
+        pygame.draw.rect(self.screen, (30, 30, 50), ai_zone, border_radius=5)
         pygame.draw.rect(self.screen, DARK_BLUE, ai_zone, 2, border_radius=5)
         
         # Etiquetas
@@ -636,7 +738,14 @@ class Game:
         max_chars = 22 # Más caracteres visibles
         
         # --- TU MAZO (Columna Derecha) ---
-        x_pos = SCREEN_WIDTH - 220
+        x_pos = SCREEN_WIDTH - 250 # Más adentro
+        
+        # Fondo semi-transparente para la lista
+        bg_rect = pygame.Rect(x_pos - 10, y_start - 30, 240, SCREEN_HEIGHT - y_start + 20)
+        s = pygame.Surface((bg_rect.width, bg_rect.height))
+        s.set_alpha(100)
+        s.fill(BLACK)
+        self.screen.blit(s, (bg_rect.x, bg_rect.y))
         
         deck_label = self.font_tiny.render("TU MAZO (Orden):", True, GOLD)
         self.screen.blit(deck_label, (x_pos, y_start - 20))
@@ -649,7 +758,7 @@ class Game:
             y_pos = y_start + i * line_height
             
             # Si llegamos al fondo, mostrar aviso y parar
-            if y_pos > SCREEN_HEIGHT - 20:
+            if y_pos > SCREEN_HEIGHT - 100: # Dejar espacio para botones
                 more = self.font_micro.render(f"... y {len(self.deck_preview_sprites) - i} más", True, WHITE)
                 self.screen.blit(more, (x_pos, y_pos))
                 break
@@ -658,7 +767,14 @@ class Game:
             self.screen.blit(text, (x_pos, y_pos))
         
         # --- MAZO IA (Columna Izquierda) ---
-        x_pos_ai = 15
+        x_pos_ai = 20 # Más adentro
+        
+        # Fondo semi-transparente para la lista
+        bg_rect_ai = pygame.Rect(x_pos_ai - 10, y_start - 30, 240, SCREEN_HEIGHT - y_start + 20)
+        s_ai = pygame.Surface((bg_rect_ai.width, bg_rect_ai.height))
+        s_ai.set_alpha(100)
+        s_ai.fill(BLACK)
+        self.screen.blit(s_ai, (bg_rect_ai.x, bg_rect_ai.y))
         
         ai_deck_label = self.font_tiny.render("MAZO IA (Orden):", True, GOLD)
         self.screen.blit(ai_deck_label, (x_pos_ai, y_start - 20))
@@ -670,7 +786,7 @@ class Game:
             
             y_pos = y_start + i * line_height
             
-            if y_pos > SCREEN_HEIGHT - 20:
+            if y_pos > SCREEN_HEIGHT - 100:
                 more = self.font_micro.render(f"... y {len(self.ai_deck_preview_sprites) - i} más", True, WHITE)
                 self.screen.blit(more, (x_pos_ai, y_pos))
                 break
@@ -682,12 +798,19 @@ class Game:
         """Actualiza el estado de los botones según el contexto"""
         is_human_turn = self.game_state.current_player == self.game_state.human
         
-        self.btn_play_card.enabled = is_human_turn and self.selected_card_index is not None
+        # Solo permitir jugar carta si NO hay carta en el campo
+        can_play = is_human_turn and self.selected_card_index is not None and self.game_state.human.field is None
+        
+        self.btn_play_card.enabled = can_play
         self.btn_fuse.enabled = is_human_turn and len(self.game_state.human.hand) >= 2
         self.btn_battle.enabled = is_human_turn and self.waiting_for_battle
         self.btn_end_turn.enabled = is_human_turn and not self.waiting_for_battle
         self.btn_position.enabled = is_human_turn
         self.btn_star.enabled = is_human_turn
+        
+        # Botón deshacer: Solo si es turno humano y se jugó carta este turno
+        # Permitir deshacer incluso si "waiting_for_battle" está activo
+        self.btn_undo.enabled = is_human_turn and self.card_played_this_turn
     
     def draw_game_over(self):
         """Dibuja la pantalla de fin de juego"""
@@ -777,6 +900,10 @@ class Game:
             elif self.btn_back.is_clicked(pos):
                 self.state = "MENU"
         
+        elif self.state == "DECK_VIEW":
+            if self.btn_close_decks.is_clicked(pos):
+                self.state = "GAME"
+        
         elif self.state == "GAME":
             if self.game_state.current_player == self.game_state.human:
                 # Click en cartas de la mano
@@ -788,6 +915,7 @@ class Game:
                 elif self.btn_fuse.is_clicked(pos):
                     self.fusion_mode = True
                     self.fusion_first_card = None
+                    self.selected_card_index = None # Limpiar selección de jugar
                     self.message = "Selecciona la primera carta para fusionar"
                     for s in self.hand_sprites:
                         s.selected = False
@@ -803,8 +931,77 @@ class Game:
                         self.btn_star.text = "ESTRELLA 1"
                 elif self.btn_battle.is_clicked(pos):
                     self.resolve_battle()
+                elif self.btn_view_decks.is_clicked(pos):
+                    self.state = "DECK_VIEW"
+                elif self.btn_undo.is_clicked(pos):
+                    if self.game_state.human.undo_play_card():
+                        self.card_played_this_turn = False
+                        self.waiting_for_battle = False # Cancelar estado de batalla al deshacer
+                        self.message = "Jugada deshecha"
+                        self.update_card_sprites()
                 elif self.btn_end_turn.is_clicked(pos):
                     self.end_turn()
+    
+    def draw_deck_view_overlay(self):
+        """Dibuja la vista completa de los mazos"""
+        # Fondo oscuro
+        self.screen.fill(DARK_BLUE)
+        
+        title = self.font_large.render("Vista Completa de Mazos (Información Perfecta)", True, GOLD)
+        title_rect = title.get_rect(centerx=SCREEN_WIDTH // 2, y=30)
+        self.screen.blit(title, title_rect)
+        
+        # Columnas
+        col_width = SCREEN_WIDTH // 2 - 40
+        
+        # --- MAZO IA ---
+        pygame.draw.rect(self.screen, (50, 0, 0), (20, 80, col_width, SCREEN_HEIGHT - 180), border_radius=10)
+        pygame.draw.rect(self.screen, RED, (20, 80, col_width, SCREEN_HEIGHT - 180), 2, border_radius=10)
+        
+        ai_title = self.font_medium.render("Mazo IA (Orden de salida)", True, RED)
+        self.screen.blit(ai_title, (40, 90))
+        
+        ai_cards = self.game_state.get_visible_upcoming_cards(self.game_state.ai, 100)
+        
+        # Listar cartas en columnas dentro del panel si son muchas
+        y = 130
+        x = 40
+        col_limit = x + col_width - 20
+        
+        for i, card in enumerate(ai_cards):
+            text = self.font_small.render(f"{i+1}. {card.name} ({card.atk}/{card.defense})", True, WHITE)
+            self.screen.blit(text, (x, y))
+            y += 25
+            if y > SCREEN_HEIGHT - 200:
+                y = 130
+                x += 250 # Nueva columna
+                if x > col_limit: break # Evitar salir del panel
+        
+        # --- TU MAZO ---
+        x_start = SCREEN_WIDTH // 2 + 20
+        pygame.draw.rect(self.screen, (0, 50, 0), (x_start, 80, col_width, SCREEN_HEIGHT - 180), border_radius=10)
+        pygame.draw.rect(self.screen, GREEN, (x_start, 80, col_width, SCREEN_HEIGHT - 180), 2, border_radius=10)
+        
+        human_title = self.font_medium.render("Tu Mazo (Orden de salida)", True, GREEN)
+        self.screen.blit(human_title, (x_start + 20, 90))
+        
+        human_cards = self.game_state.get_visible_upcoming_cards(self.game_state.human, 100)
+        
+        y = 130
+        x = x_start + 20
+        col_limit = x + col_width - 20
+        
+        for i, card in enumerate(human_cards):
+            text = self.font_small.render(f"{i+1}. {card.name} ({card.atk}/{card.defense})", True, WHITE)
+            self.screen.blit(text, (x, y))
+            y += 25
+            if y > SCREEN_HEIGHT - 200:
+                y = 130
+                x += 250
+                if x > col_limit: break
+                
+        # Botón volver
+        self.btn_close_decks.draw(self.screen, self.font_medium)
     
     def run(self):
         """Loop principal del juego"""
@@ -822,6 +1019,8 @@ class Game:
                 self.draw_rules()
             elif self.state == "GAME":
                 self.draw_game()
+            elif self.state == "DECK_VIEW":
+                self.draw_deck_view_overlay()
             elif self.state == "GAME_OVER":
                 self.draw_game()
                 self.draw_game_over()

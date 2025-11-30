@@ -179,8 +179,14 @@ class MinimaxAI:
                 if new_state.human.field and new_state.ai.field:
                     new_state.resolve_battle()
                 
-                # Recursión (turno del humano = minimizar)
-                eval_score, _ = self.minimax(new_state, depth - 1, alpha, beta, False)
+                # Recursión
+                if action["type"] == "fuse":
+                    # Si fusiona, sigue siendo turno de la IA (maximizar)
+                    # Mantenemos la profundidad para permitir que evalúe jugar la carta resultante
+                    eval_score, _ = self.minimax(new_state, depth, alpha, beta, True)
+                else:
+                    # Si juega o pasa, cambia al turno del humano (minimizar)
+                    eval_score, _ = self.minimax(new_state, depth - 1, alpha, beta, False)
                 
                 if eval_score > max_eval:
                     max_eval = eval_score
@@ -207,8 +213,13 @@ class MinimaxAI:
                 if new_state.human.field and new_state.ai.field:
                     new_state.resolve_battle()
                 
-                # Recursión (turno de la IA = maximizar)
-                eval_score, _ = self.minimax(new_state, depth - 1, alpha, beta, True)
+                # Recursión
+                if action["type"] == "fuse":
+                    # Si fusiona, sigue siendo turno del humano (minimizar)
+                    eval_score, _ = self.minimax(new_state, depth, alpha, beta, False)
+                else:
+                    # Si juega o pasa, cambia al turno de la IA (maximizar)
+                    eval_score, _ = self.minimax(new_state, depth - 1, alpha, beta, True)
                 
                 if eval_score < min_eval:
                     min_eval = eval_score

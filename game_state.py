@@ -18,6 +18,7 @@ class Player:
         self.hand = []           # Cartas en la mano (máx 5)
         self.field = None        # Carta en el campo (solo 1)
         self.graveyard = []      # Cartas destruidas
+        self._last_sacrificed_card = None # Para deshacer jugada
     
     def draw_card(self):
         """Roba una carta del mazo si es posible"""
@@ -40,14 +41,36 @@ class Player:
         if hand_index < 0 or hand_index >= len(self.hand):
             return False
         
+        # Resetear sacrificio anterior
+        self._last_sacrificed_card = None
+        
         # Si ya hay una carta en el campo, va al cementerio
         if self.field is not None:
             self.graveyard.append(self.field)
+            self._last_sacrificed_card = self.field
         
         card = self.hand.pop(hand_index)
         card.set_position(position)
         card.select_star(star_num)
         self.field = card
+        return True
+    
+    def undo_play_card(self):
+        """Deshace la última jugada de carta"""
+        if self.field is None:
+            return False
+            
+        # Devolver carta del campo a la mano
+        self.hand.append(self.field)
+        self.field = None
+        
+        # Restaurar carta sacrificada si hubo
+        if self._last_sacrificed_card:
+            # Verificar que está en el cementerio (debería ser la última)
+            if self.graveyard and self.graveyard[-1] == self._last_sacrificed_card:
+                self.field = self.graveyard.pop()
+            self._last_sacrificed_card = None
+            
         return True
     
     def can_fuse(self, idx1, idx2):
