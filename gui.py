@@ -747,7 +747,7 @@ class Game:
         pygame.draw.line(self.screen, GOLD, (panel_x + 50, line_y), (panel_x + panel_width - 50, line_y), 2)
         
         # Badge de IA
-        badge_text = self.font_medium.render("⚡ Minimax AI Edition ⚡", True, CYAN)
+        badge_text = self.font_medium.render(" Minimax AI Edition ", True, CYAN)
         badge_rect = badge_text.get_rect(centerx=SCREEN_WIDTH // 2, y=235)
         self.screen.blit(badge_text, badge_rect)
         
