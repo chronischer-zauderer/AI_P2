@@ -206,6 +206,28 @@ class Game:
         self.waiting_for_battle = False
         self.card_played_this_turn = False # Para controlar el deshacer
         
+        # === SISTEMA DE FASES (Como Yu-Gi-Oh! real) ===
+        # DRAW_PHASE -> MAIN_PHASE -> BATTLE_PHASE -> END_PHASE
+        self.current_phase = "DRAW_PHASE"
+        self.phase_names = {
+            "DRAW_PHASE": "Fase de Robo",
+            "MAIN_PHASE": "Fase Principal",
+            "BATTLE_PHASE": "Fase de Batalla",
+            "END_PHASE": "Fase Final"
+        }
+        self.phase_colors = {
+            "DRAW_PHASE": CYAN,
+            "MAIN_PHASE": GREEN,
+            "BATTLE_PHASE": RED,
+            "END_PHASE": GRAY
+        }
+        
+        # Control de animaciones y flujo
+        self.animation_timer = 0
+        self.drawn_card = None  # Carta recién robada (para mostrar animación)
+        self.show_drawn_card = False
+        self.battle_result_display = None  # Para mostrar resultado de batalla
+        
         # Botones del menú
         self.setup_menu_buttons()
         
@@ -268,14 +290,24 @@ class Game:
         self.selected_card_index = None
         self.fusion_mode = False
         self.fusion_first_card = None
-        self.message = "¡Tu turno! Selecciona una carta para jugar."
-        self.message_timer = 180
         self.waiting_for_battle = False
         self.card_played_this_turn = False
+        
+        # Iniciar en fase principal (ya se robaron las cartas iniciales)
+        self.current_phase = "MAIN_PHASE"
+        self.drawn_card = None
+        self.show_drawn_card = False
+        self.battle_result_display = None
+        
+        self.message = "¡Comienza el duelo! Tu turno - Fase Principal"
+        self.message_timer = 180
         self.update_card_sprites()
         print(f"[Juego] Partida iniciada con {self.deck_size} cartas por mazo")
         print(f"[Juego] Total de cartas disponibles: {len(CARD_DATABASE)}")
         print(f"[Juego] Total de fusiones disponibles: {len(FUSIONS)}")
+        
+        # Mostrar ayuda de fusiones para el primer turno
+        self.print_fusion_help()
     
     def update_card_sprites(self):
         """Actualiza los sprites de las cartas"""
@@ -396,7 +428,7 @@ class Game:
     
     def play_selected_card(self):
         """Juega la carta seleccionada"""
-        if self.selected_card_index is not None:
+        if self.selected_card_index is not None and self.current_phase == "MAIN_PHASE":
             position = "ATK" if "ATK" in self.btn_position.text else "DEF"
             star = 1 if "1" in self.btn_star.text else 2
             
@@ -411,86 +443,255 @@ class Game:
                 
                 self.update_card_sprites()
                 
-                # Si hay cartas en ambos campos, esperar para batalla
-                if self.game_state.human.field and self.game_state.ai.field:
+                card_name = self.game_state.human.field.name if self.game_state.human.field else "una carta"
+                self.message = f"¡{card_name} invocado en posición {position}!"
+                
+                # Solo pasar a fase de batalla si:
+                # 1. Hay carta enemiga en campo
+                # 2. Tu carta está en ATK (los monstruos en DEF no atacan)
+                if self.game_state.human.field and self.game_state.ai.field and position == "ATK":
                     self.waiting_for_battle = True
-                    self.message = "¡Cartas listas! Presiona BATALLA para combatir"
+                    pygame.time.wait(500)
+                    self.current_phase = "BATTLE_PHASE"
+                    self.message = f"¡Fase de Batalla! {card_name} vs {self.game_state.ai.field.name}"
+                elif position == "DEF":
+                    # Carta en DEF no ataca, terminar turno directamente
+                    self.message = f"¡{card_name} en DEF! No puede atacar. Fin de tu turno."
                 else:
-                    self.message = "Carta jugada. Puedes terminar tu turno."
+                    self.message = f"¡{card_name} invocado! Puedes terminar tu turno."
     
     def resolve_battle(self):
-        """Resuelve la batalla entre cartas"""
+        """Resuelve la batalla entre cartas - Con animación mejorada (HUMANO ATACA)"""
         if self.game_state.human.field and self.game_state.ai.field:
-            result = self.game_state.resolve_battle()
+            # Mostrar enfrentamiento
+            human_card = self.game_state.human.field
+            ai_card = self.game_state.ai.field
+            
+            self.message = f"⚔️ {human_card.name} ataca a {ai_card.name}..."
+            self.draw_game()
+            pygame.display.flip()
+            pygame.time.wait(800)
+            
+            # HUMANO es el atacante
+            result = self.game_state.resolve_battle(attacker="human")
             self.waiting_for_battle = False
             
             if result:
+                # Guardar resultado para mostrar
+                self.battle_result_display = result
+                
                 if result["winner"] == "human":
-                    self.message = f"¡Ganaste! {result['human_card']} ({result['human_value']}) vs {result['ai_card']} ({result['ai_value']}). Daño: {result['damage']}"
+                    self.message = f"✓ ¡Victoria! {result['description']}"
                 elif result["winner"] == "ai":
-                    self.message = f"¡Perdiste! {result['ai_card']} ({result['ai_value']}) vs {result['human_card']} ({result['human_value']}). Daño: {result['damage']}"
+                    self.message = f"✗ ¡Derrota! {result['description']}"
                 else:
-                    self.message = "¡Empate! Ambas cartas fueron destruidas"
+                    self.message = f"= {result['description']}"
+                
+                # Mostrar resultado con pausa
+                self.draw_game()
+                pygame.display.flip()
+                pygame.time.wait(1500)
+                
+                self.battle_result_display = None
             
+            # Pasar a fase final después de batalla
+            self.current_phase = "END_PHASE"
             self.update_card_sprites()
             
             if self.game_state.game_over:
                 self.state = "GAME_OVER"
+            else:
+                self.message = "Fase Final - Presiona FIN TURNO"
     
     def end_turn(self):
-        """Termina el turno del jugador"""
+        """Termina el turno del jugador y pasa al turno de la IA"""
         self.card_played_this_turn = False
+        self.current_phase = "END_PHASE"
+        
+        self.message = "Fin de tu turno..."
+        self.draw_game()
+        pygame.display.flip()
+        pygame.time.wait(500)
+        
+        # Cambiar turno
         self.game_state.next_turn()
+        
+        # Ejecutar turno de la IA
         self.ai_turn()
     
     def ai_turn(self):
-        """Ejecuta el turno de la IA"""
+        """Ejecuta el turno de la IA con fases y animaciones mejoradas"""
         self.ai_thinking = True
-        self.message = "La IA está pensando..."
         
-        # Actualizar la pantalla para mostrar el mensaje
+        # === FASE DE ROBO DE LA IA ===
+        self.current_phase = "DRAW_PHASE"
+        self.message = "🎴 Turno de la IA - Fase de Robo"
         self.draw_game()
         pygame.display.flip()
+        pygame.time.wait(800)
+        
+        # Mostrar que robó una carta (ya se robó en next_turn)
+        if self.game_state.ai.hand:
+            last_card = self.game_state.ai.hand[-1]
+            self.message = f"🎴 La IA robó: {last_card.name}"
+            self.update_card_sprites()
+            self.draw_game()
+            pygame.display.flip()
+            pygame.time.wait(1000)
+        
+        # === FASE PRINCIPAL DE LA IA ===
+        self.current_phase = "MAIN_PHASE"
+        self.message = "🤔 La IA está pensando..."
+        self.draw_game()
+        pygame.display.flip()
+        pygame.time.wait(500)
         
         # Obtener mejor movimiento de la IA
         best_action = self.ai.get_best_move(self.game_state)
         
         if best_action:
+            # Intentar fusión primero
             if best_action["type"] == "fuse":
-                result = self.game_state.ai.fuse_cards(best_action["idx1"], best_action["idx2"])
+                idx1, idx2 = best_action["idx1"], best_action["idx2"]
+                card1_name = self.game_state.ai.hand[idx1].name if idx1 < len(self.game_state.ai.hand) else "?"
+                card2_name = self.game_state.ai.hand[idx2].name if idx2 < len(self.game_state.ai.hand) else "?"
+                
+                self.message = f"🔮 La IA fusiona: {card1_name} + {card2_name}"
+                self.draw_game()
+                pygame.display.flip()
+                pygame.time.wait(1000)
+                
+                result = self.game_state.ai.fuse_cards(idx1, idx2)
                 if result:
-                    self.message = f"La IA fusionó y obtuvo {result.name} (ATK: {result.atk})"
+                    self.message = f"✨ ¡Fusión! La IA obtuvo {result.name} (ATK: {result.atk})"
                     self.update_card_sprites()
                     self.draw_game()
                     pygame.display.flip()
                     pygame.time.wait(1500)
+                    
                     # La IA puede hacer otra acción después de fusionar
                     best_action = self.ai.get_best_move(self.game_state)
             
+            # Jugar carta
             if best_action and best_action["type"] == "play":
-                self.game_state.apply_action(self.game_state.ai, best_action)
-                card_name = self.game_state.ai.field.name if self.game_state.ai.field else "una carta"
+                card_idx = best_action.get("card_index", 0)
+                card_to_play = self.game_state.ai.hand[card_idx] if card_idx < len(self.game_state.ai.hand) else None
                 position = best_action.get("position", "ATK")
-                self.message = f"La IA jugó {card_name} en {position}"
-        
-        self.update_card_sprites()
-        
-        # Resolver batalla si es posible
-        if self.game_state.human.field and self.game_state.ai.field:
+                
+                if card_to_play:
+                    self.message = f"📤 La IA invoca: {card_to_play.name} en {position}"
+                    self.draw_game()
+                    pygame.display.flip()
+                    pygame.time.wait(800)
+                
+                self.game_state.apply_action(self.game_state.ai, best_action)
+                self.update_card_sprites()
+                
+                if self.game_state.ai.field:
+                    self.message = f"⚔️ {self.game_state.ai.field.name} está en el campo"
+                    self.draw_game()
+                    pygame.display.flip()
+                    pygame.time.wait(800)
+        else:
+            self.message = "🤷 La IA no puede hacer ningún movimiento"
             self.draw_game()
             pygame.display.flip()
             pygame.time.wait(1000)
-            self.resolve_battle()
         
+        self.update_card_sprites()
+        
+        # === FASE DE BATALLA DE LA IA ===
+        if self.game_state.human.field and self.game_state.ai.field:
+            self.current_phase = "BATTLE_PHASE"
+            ai_card = self.game_state.ai.field
+            human_card = self.game_state.human.field
+            
+            self.message = f"⚔️ ¡{ai_card.name} ataca a {human_card.name}!"
+            self.draw_game()
+            pygame.display.flip()
+            pygame.time.wait(1000)
+            
+            # IA es el atacante
+            result = self.game_state.resolve_battle(attacker="ai")
+            self.waiting_for_battle = False
+            
+            if result:
+                if result["winner"] == "human":
+                    self.message = f"✓ ¡Defendiste! {result['description']}"
+                elif result["winner"] == "ai":
+                    self.message = f"✗ La IA ganó: {result['description']}"
+                else:
+                    self.message = f"= {result['description']}"
+                
+                self.update_card_sprites()
+                self.draw_game()
+                pygame.display.flip()
+                pygame.time.wait(1500)
+        
+        # === FASE FINAL DE LA IA ===
+        self.current_phase = "END_PHASE"
         self.ai_thinking = False
         
         if not self.game_state.game_over:
-            # Pasar turno al jugador
+            self.message = "La IA termina su turno..."
+            self.draw_game()
+            pygame.display.flip()
+            pygame.time.wait(600)
+            
+            # === PASAR AL TURNO DEL JUGADOR ===
             self.game_state.next_turn()
-            self.message = "¡Tu turno! Selecciona una carta."
+            
+            # Fase de robo del jugador
+            self.current_phase = "DRAW_PHASE"
+            if self.game_state.human.hand:
+                drawn = self.game_state.human.hand[-1]
+                self.drawn_card = drawn
+                self.show_drawn_card = True
+                self.message = f"🎴 ¡Tu turno! Robaste: {drawn.name}"
+                self.update_card_sprites()
+                self.draw_game()
+                pygame.display.flip()
+                pygame.time.wait(1200)
+                self.show_drawn_card = False
+            
+            # Pasar a fase principal
+            self.current_phase = "MAIN_PHASE"
+            self.message = "Tu turno - Fase Principal"
             self.update_card_sprites()
+            
+            # Mostrar ayuda de fusiones en consola
+            self.print_fusion_help()
         else:
             self.state = "GAME_OVER"
+    
+    def print_fusion_help(self):
+        """Muestra en consola las fusiones posibles para el turno del humano"""
+        from cards import get_possible_fusions_for_hand
+        
+        hand = self.game_state.human.hand
+        fusions = get_possible_fusions_for_hand(hand)
+        
+        print("\n" + "="*60)
+        print("🔮 AYUDA DE FUSIONES - Tu mano actual:")
+        print("="*60)
+        
+        # Mostrar cartas en mano
+        for i, card in enumerate(hand):
+            print(f"  [{i+1}] {card.name} (ATK:{card.atk}/DEF:{card.defense})")
+        
+        print("-"*60)
+        
+        if fusions:
+            print("✨ FUSIONES POSIBLES:")
+            for idx1, idx2, result in fusions:
+                card1 = hand[idx1]
+                card2 = hand[idx2]
+                print(f"  → [{idx1+1}] {card1.name} + [{idx2+1}] {card2.name}")
+                print(f"    = {result.name} (ATK:{result.atk}/DEF:{result.defense})")
+        else:
+            print("❌ No hay fusiones posibles con tu mano actual.")
+        
+        print("="*60 + "\n")
     
     def draw_menu(self):
         """Dibuja el menú principal"""
@@ -601,6 +802,9 @@ class Game:
         pygame.draw.line(self.screen, GOLD, (0, SCREEN_HEIGHT // 2), 
                         (SCREEN_WIDTH, SCREEN_HEIGHT // 2), 3)
         
+        # === INDICADOR DE FASE (Nuevo) ===
+        self.draw_phase_indicator()
+        
         # Información de jugadores
         self.draw_player_info()
         
@@ -612,6 +816,10 @@ class Game:
         
         # Preview de mazos
         self.draw_deck_preview()
+        
+        # Carta recién robada (resaltada)
+        if self.show_drawn_card and self.drawn_card:
+            self.draw_drawn_card_highlight()
         
         # Botones de acción
         self.update_button_states()
@@ -633,12 +841,74 @@ class Game:
             self.screen.blit(s, bg_rect)
             
             self.screen.blit(msg_surface, msg_rect)
+    
+    def draw_phase_indicator(self):
+        """Dibuja el indicador de fase actual del turno"""
+        # Posición en la parte superior derecha
+        x = SCREEN_WIDTH - 280
+        y = 15
         
-        # Indicador de turno
-        turn_text = "TU TURNO" if self.game_state.current_player == self.game_state.human else "TURNO IA"
-        turn_surface = self.font_medium.render(turn_text, True, GREEN if "TU" in turn_text else RED)
-        # Ya se dibuja en draw_player_info, eliminar de aquí para evitar duplicados o solapamientos
-        # self.screen.blit(turn_surface, (SCREEN_WIDTH - 300, SCREEN_HEIGHT // 2 - 20))
+        # Determinar de quién es el turno
+        is_human_turn = self.game_state.current_player == self.game_state.human
+        turn_owner = "TU TURNO" if is_human_turn else "TURNO IA"
+        turn_color = GREEN if is_human_turn else RED
+        
+        # Fondo del indicador
+        bg_rect = pygame.Rect(x - 10, y - 5, 270, 80)
+        s = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(s, (0, 0, 0, 180), s.get_rect(), border_radius=10)
+        pygame.draw.rect(s, turn_color, s.get_rect(), 2, border_radius=10)
+        self.screen.blit(s, bg_rect)
+        
+        # Turno
+        turn_text = self.font_small.render(turn_owner, True, turn_color)
+        self.screen.blit(turn_text, (x, y))
+        
+        # Número de turno
+        turn_num = self.font_tiny.render(f"Turno #{self.game_state.turn_number}", True, WHITE)
+        self.screen.blit(turn_num, (x + 120, y + 3))
+        
+        # Fase actual
+        phase_name = self.phase_names.get(self.current_phase, self.current_phase)
+        phase_color = self.phase_colors.get(self.current_phase, WHITE)
+        phase_text = self.font_medium.render(phase_name, True, phase_color)
+        self.screen.blit(phase_text, (x, y + 28))
+        
+        # Mini indicadores de todas las fases
+        phases = ["DRAW_PHASE", "MAIN_PHASE", "BATTLE_PHASE", "END_PHASE"]
+        phase_short = ["ROB", "MAIN", "BAT", "FIN"]
+        dot_x = x
+        for i, phase in enumerate(phases):
+            is_current = (phase == self.current_phase)
+            color = self.phase_colors[phase] if is_current else DARK_GRAY
+            
+            # Círculo indicador
+            pygame.draw.circle(self.screen, color, (dot_x + 12, y + 65), 8)
+            if is_current:
+                pygame.draw.circle(self.screen, WHITE, (dot_x + 12, y + 65), 8, 2)
+            
+            # Etiqueta
+            label = self.font_micro.render(phase_short[i], True, color)
+            self.screen.blit(label, (dot_x, y + 75))
+            
+            dot_x += 65
+    
+    def draw_drawn_card_highlight(self):
+        """Resalta la carta recién robada"""
+        if not self.hand_sprites:
+            return
+        
+        # La carta robada es la última en la mano
+        last_sprite = self.hand_sprites[-1]
+        
+        # Dibujar un borde brillante alrededor
+        glow_rect = last_sprite.rect.inflate(10, 10)
+        pygame.draw.rect(self.screen, GOLD, glow_rect, 4, border_radius=8)
+        
+        # Texto "¡NUEVA!"
+        new_text = self.font_tiny.render("¡NUEVA!", True, GOLD)
+        text_rect = new_text.get_rect(centerx=last_sprite.rect.centerx, bottom=last_sprite.rect.top - 5)
+        self.screen.blit(new_text, text_rect)
     
     def draw_player_info(self):
         """Dibuja información de los jugadores"""
@@ -795,22 +1065,45 @@ class Game:
             self.screen.blit(text, (x_pos_ai, y_pos))
     
     def update_button_states(self):
-        """Actualiza el estado de los botones según el contexto"""
+        """Actualiza el estado de los botones según el contexto y la fase actual"""
         is_human_turn = self.game_state.current_player == self.game_state.human
+        is_main_phase = self.current_phase == "MAIN_PHASE"
+        is_battle_phase = self.current_phase == "BATTLE_PHASE"
+        is_end_phase = self.current_phase == "END_PHASE"
         
-        # Solo permitir jugar carta si NO hay carta en el campo
-        can_play = is_human_turn and self.selected_card_index is not None and self.game_state.human.field is None
+        # Solo permitir jugar carta en FASE PRINCIPAL y si NO hay carta en el campo
+        can_play = (is_human_turn and is_main_phase and 
+                    self.selected_card_index is not None and 
+                    self.game_state.human.field is None)
+        
+        # Fusionar solo en fase principal
+        can_fuse = is_human_turn and is_main_phase and len(self.game_state.human.hand) >= 2
+        
+        # Batalla solo en fase de batalla cuando hay 2 cartas
+        can_battle = is_human_turn and is_battle_phase and self.waiting_for_battle
+        
+        # Fin de turno: en fase principal (sin carta en campo enemigo) o fase final
+        can_end = is_human_turn and (is_end_phase or (is_main_phase and not self.waiting_for_battle))
         
         self.btn_play_card.enabled = can_play
-        self.btn_fuse.enabled = is_human_turn and len(self.game_state.human.hand) >= 2
-        self.btn_battle.enabled = is_human_turn and self.waiting_for_battle
-        self.btn_end_turn.enabled = is_human_turn and not self.waiting_for_battle
-        self.btn_position.enabled = is_human_turn
-        self.btn_star.enabled = is_human_turn
+        self.btn_fuse.enabled = can_fuse
+        self.btn_battle.enabled = can_battle
+        self.btn_end_turn.enabled = can_end
+        self.btn_position.enabled = is_human_turn and is_main_phase
+        self.btn_star.enabled = is_human_turn and is_main_phase
         
-        # Botón deshacer: Solo si es turno humano y se jugó carta este turno
-        # Permitir deshacer incluso si "waiting_for_battle" está activo
-        self.btn_undo.enabled = is_human_turn and self.card_played_this_turn
+        # Botón deshacer: En fase principal O fase de batalla (antes de atacar)
+        # Permite deshacer la jugada y volver a elegir otra carta/posición
+        can_undo = is_human_turn and self.card_played_this_turn and (is_main_phase or is_battle_phase)
+        self.btn_undo.enabled = can_undo
+        
+        # Actualizar texto del botón de batalla según fase
+        if is_battle_phase:
+            self.btn_battle.text = "¡ATACAR!"
+            self.btn_battle.color = RED
+        else:
+            self.btn_battle.text = "BATALLA"
+            self.btn_battle.color = RED
     
     def draw_game_over(self):
         """Dibuja la pantalla de fin de juego"""
@@ -936,8 +1229,9 @@ class Game:
                 elif self.btn_undo.is_clicked(pos):
                     if self.game_state.human.undo_play_card():
                         self.card_played_this_turn = False
-                        self.waiting_for_battle = False # Cancelar estado de batalla al deshacer
-                        self.message = "Jugada deshecha"
+                        self.waiting_for_battle = False
+                        self.current_phase = "MAIN_PHASE"  # Volver a fase principal
+                        self.message = "↩️ Jugada deshecha - Fase Principal"
                         self.update_card_sprites()
                 elif self.btn_end_turn.is_clicked(pos):
                     self.end_turn()
