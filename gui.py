@@ -10,6 +10,7 @@ from cards import (
     CARD_DATABASE, FUSIONS, GUARDIAN_STARS, 
     check_fusion_by_cards, calculate_star_bonus
 )
+from card_image_manager import get_card_image_manager
 
 # Inicializar Pygame
 pygame.init()
@@ -95,83 +96,50 @@ class Button:
         return self.enabled and self.rect.collidepoint(pos)
 
 class CardSprite:
-    """Representa una carta visual en la interfaz"""
+    """Representa una carta visual en la interfaz - Versión mejorada con imágenes"""
     def __init__(self, card, x, y, width=CARD_WIDTH, height=CARD_HEIGHT, face_down=False):
         self.card = card
         self.rect = pygame.Rect(x, y, width, height)
         self.face_down = face_down
         self.selected = False
         self.hover = False
+        self.image_manager = get_card_image_manager()
     
     def draw(self, screen, font_small, font_tiny):
         if self.face_down:
-            # Carta boca abajo
-            pygame.draw.rect(screen, BROWN, self.rect, border_radius=5)
-            pygame.draw.rect(screen, GOLD, self.rect, 2, border_radius=5)
-            # Patrón decorativo
+            # Carta boca abajo - diseño mejorado
+            pygame.draw.rect(screen, BROWN, self.rect, border_radius=8)
+            pygame.draw.rect(screen, GOLD, self.rect, 3, border_radius=8)
+            # Patrón decorativo mejorado
             inner_rect = pygame.Rect(self.rect.x + 10, self.rect.y + 10, 
                                      self.rect.width - 20, self.rect.height - 20)
-            pygame.draw.rect(screen, DARK_BLUE, inner_rect, border_radius=3)
+            pygame.draw.rect(screen, DARK_BLUE, inner_rect, border_radius=5)
+            
+            # Patrón de líneas decorativas
+            for i in range(5):
+                y_pos = self.rect.y + 20 + i * (self.rect.height - 40) // 5
+                pygame.draw.line(screen, GOLD, 
+                               (self.rect.x + 15, y_pos),
+                               (self.rect.x + self.rect.width - 15, y_pos), 2)
         else:
-            # Fondo de carta según posición
-            bg_color = (30, 30, 30) # Fondo oscuro neutro
-            pygame.draw.rect(screen, bg_color, self.rect, border_radius=5)
+            # Obtener imagen de la carta (generada con mejor diseño)
+            card_image = self.image_manager.get_card_image(self.card, 
+                                                          self.rect.width, 
+                                                          self.rect.height)
             
-            # Borde (dorado si seleccionada, verde/azul según posición)
+            # Dibujar la imagen de la carta
+            screen.blit(card_image, self.rect)
+            
+            # Borde adicional según estado
             if self.selected:
-                border_color = GOLD
-                border_width = 3
+                # Borde dorado grueso si está seleccionada
+                pygame.draw.rect(screen, GOLD, self.rect, 4, border_radius=5)
+                # Efecto de brillo
+                glow_rect = self.rect.inflate(8, 8)
+                pygame.draw.rect(screen, GOLD, glow_rect, 2, border_radius=6)
             elif self.hover:
-                border_color = WHITE
-                border_width = 2
-            else:
-                border_color = GREEN if self.card.position == "ATK" else BLUE
-                border_width = 2
-                
-            pygame.draw.rect(screen, border_color, self.rect, border_width, border_radius=5)
-            
-            # Nombre de la carta
-            name = self.card.name[:12] + "..." if len(self.card.name) > 12 else self.card.name
-            name_surface = font_tiny.render(name, True, WHITE)
-            name_rect = name_surface.get_rect(centerx=self.rect.centerx, top=self.rect.top + 5)
-            screen.blit(name_surface, name_rect)
-            
-            # Imagen representativa (simulada con color según estrella)
-            img_rect = pygame.Rect(self.rect.x + 10, self.rect.y + 25, 
-                                   self.rect.width - 20, 50)
-            star_color = STAR_COLORS.get(self.card.selected_star, GRAY)
-            pygame.draw.rect(screen, star_color, img_rect, border_radius=3)
-            
-            # Estrella guardiana seleccionada
-            star_text = font_tiny.render(self.card.selected_star[:3], True, BLACK)
-            star_rect = star_text.get_rect(center=img_rect.center)
-            screen.blit(star_text, star_rect)
-            
-            # ATK/DEF con fondo para legibilidad
-            stats_y = self.rect.bottom - 40
-            
-            # ATK
-            atk_bg = pygame.Rect(self.rect.x + 5, stats_y, self.rect.width - 10, 15)
-            pygame.draw.rect(screen, (50, 0, 0), atk_bg, border_radius=2)
-            atk_text = font_tiny.render(f"ATK: {self.card.atk}", True, (255, 100, 100))
-            screen.blit(atk_text, (self.rect.x + 7, stats_y + 2))
-            
-            # DEF
-            def_bg = pygame.Rect(self.rect.x + 5, stats_y + 17, self.rect.width - 10, 15)
-            pygame.draw.rect(screen, (0, 0, 50), def_bg, border_radius=2)
-            def_text = font_tiny.render(f"DEF: {self.card.defense}", True, (100, 100, 255))
-            screen.blit(def_text, (self.rect.x + 7, stats_y + 19))
-            
-            # Indicador de posición (pequeño icono)
-            pos_color = GREEN if self.card.position == "ATK" else BLUE
-            pos_rect = pygame.Rect(self.rect.right - 20, self.rect.top + 5, 15, 15)
-            pygame.draw.circle(screen, pos_color, pos_rect.center, 6)
-            pygame.draw.circle(screen, WHITE, pos_rect.center, 6, 1)
-            
-            pos_char = "A" if self.card.position == "ATK" else "D"
-            pos_text = font_tiny.render(pos_char, True, WHITE)
-            pos_text_rect = pos_text.get_rect(center=pos_rect.center)
-            screen.blit(pos_text, pos_text_rect)
+                # Borde blanco si está en hover
+                pygame.draw.rect(screen, WHITE, self.rect, 3, border_radius=5)
     
     def check_click(self, pos):
         return self.rect.collidepoint(pos)
@@ -694,26 +662,53 @@ class Game:
         print("="*60 + "\n")
     
     def draw_menu(self):
-        """Dibuja el menú principal"""
-        # Fondo
-        self.screen.fill(DARK_BLUE)
+        """Dibuja el menú principal con diseño mejorado"""
+        # Fondo con gradiente azul oscuro
+        for y in range(SCREEN_HEIGHT):
+            ratio = y / SCREEN_HEIGHT
+            color = (
+                int(25 + 40 * ratio),
+                int(25 + 60 * ratio),
+                int(112 + 50 * ratio)
+            )
+            pygame.draw.line(self.screen, color, (0, y), (SCREEN_WIDTH, y))
         
-        # Título
-        title = self.font_large.render("Yu-Gi-Oh! Forbidden Memories", True, GOLD)
+        # Título con sombra
+        title_text = "Yu-Gi-Oh! Forbidden Memories"
+        title_shadow = self.font_large.render(title_text, True, (0, 0, 0))
+        title = self.font_large.render(title_text, True, GOLD)
+        
         title_rect = title.get_rect(centerx=SCREEN_WIDTH // 2, y=100)
+        shadow_rect = title_rect.move(3, 3)
+        
+        self.screen.blit(title_shadow, shadow_rect)
         self.screen.blit(title, title_rect)
         
-        subtitle = self.font_medium.render("Minimax AI Edition", True, WHITE)
+        # Borde decorativo alrededor del título
+        title_border = title_rect.inflate(20, 15)
+        pygame.draw.rect(self.screen, GOLD, title_border, 2, border_radius=10)
+        
+        # Subtítulo con efecto
+        subtitle = self.font_medium.render("Minimax AI Edition", True, CYAN)
         subtitle_rect = subtitle.get_rect(centerx=SCREEN_WIDTH // 2, y=160)
         self.screen.blit(subtitle, subtitle_rect)
         
-        # Info del proyecto
-        info = self.font_small.render("Universidad del Valle - Introducción a la IA", True, LIGHT_GRAY)
+        # Info del proyecto con fondo
+        info_text = "Universidad del Valle - Introducción a la IA"
+        info = self.font_small.render(info_text, True, LIGHT_GRAY)
         info_rect = info.get_rect(centerx=SCREEN_WIDTH // 2, y=220)
+        
+        # Fondo para info
+        info_bg = pygame.Surface((info.get_width() + 20, info.get_height() + 8), pygame.SRCALPHA)
+        pygame.draw.rect(info_bg, (0, 0, 0, 120), info_bg.get_rect(), border_radius=5)
+        self.screen.blit(info_bg, (info_rect.x - 10, info_rect.y - 4))
         self.screen.blit(info, info_rect)
         
-        # Botones
+        # Botones con sombra
         for btn in self.menu_buttons:
+            # Sombra del botón
+            shadow_rect = btn.rect.move(3, 3)
+            pygame.draw.rect(self.screen, (0, 0, 0), shadow_rect, border_radius=8)
             btn.draw(self.screen, self.font_medium)
     
     def draw_config(self):
@@ -794,13 +789,25 @@ class Game:
             y += 22
     
     def draw_game(self):
-        """Dibuja la pantalla del juego"""
-        # Fondo
-        self.screen.fill((20, 60, 20))
+        """Dibuja la pantalla del juego con diseño mejorado"""
+        # Fondo con gradiente verde (campo de duelo)
+        for y in range(SCREEN_HEIGHT):
+            # Gradiente de verde oscuro a verde claro
+            ratio = y / SCREEN_HEIGHT
+            color = (
+                int(15 + 20 * ratio),
+                int(50 + 30 * ratio),
+                int(15 + 20 * ratio)
+            )
+            pygame.draw.line(self.screen, color, (0, y), (SCREEN_WIDTH, y))
         
-        # Línea divisoria del campo
+        # Línea divisoria del campo con efecto
         pygame.draw.line(self.screen, GOLD, (0, SCREEN_HEIGHT // 2), 
-                        (SCREEN_WIDTH, SCREEN_HEIGHT // 2), 3)
+                        (SCREEN_WIDTH, SCREEN_HEIGHT // 2), 4)
+        pygame.draw.line(self.screen, (180, 140, 0), (0, SCREEN_HEIGHT // 2 - 2), 
+                        (SCREEN_WIDTH, SCREEN_HEIGHT // 2 - 2), 1)
+        pygame.draw.line(self.screen, (180, 140, 0), (0, SCREEN_HEIGHT // 2 + 2), 
+                        (SCREEN_WIDTH, SCREEN_HEIGHT // 2 + 2), 1)
         
         # === INDICADOR DE FASE (Nuevo) ===
         self.draw_phase_indicator()
@@ -826,18 +833,26 @@ class Game:
         for btn in self.game_buttons:
             btn.draw(self.screen, self.font_small)
         
-        # Mensaje
+        # Mensaje con diseño mejorado
         if self.message:
             msg_surface = self.font_medium.render(self.message, True, YELLOW)
             # Mover mensaje arriba, entre la mano de la IA y el campo de la IA
             # Esto evita que tape las estadísticas o el campo
             msg_rect = msg_surface.get_rect(centerx=SCREEN_WIDTH // 2, y=210)
             
-            # Fondo semi-transparente
+            # Fondo semi-transparente con efecto de sombra
             bg_rect = msg_rect.inflate(40, 20)
+            shadow_rect = bg_rect.move(3, 3)
+            
+            # Sombra
+            s_shadow = pygame.Surface((shadow_rect.width, shadow_rect.height), pygame.SRCALPHA)
+            pygame.draw.rect(s_shadow, (0, 0, 0, 100), s_shadow.get_rect(), border_radius=10)
+            self.screen.blit(s_shadow, shadow_rect)
+            
+            # Fondo del mensaje
             s = pygame.Surface((bg_rect.width, bg_rect.height), pygame.SRCALPHA)
             pygame.draw.rect(s, (0, 0, 0, 230), s.get_rect(), border_radius=10)
-            pygame.draw.rect(s, GOLD, s.get_rect(), 2, border_radius=10)
+            pygame.draw.rect(s, GOLD, s.get_rect(), 3, border_radius=10)
             self.screen.blit(s, bg_rect)
             
             self.screen.blit(msg_surface, msg_rect)
@@ -949,31 +964,71 @@ class Game:
         self.screen.blit(turn, turn_rect)
     
     def draw_field(self):
-        """Dibuja el campo de batalla"""
-        # Zona de campo del jugador
+        """Dibuja el campo de batalla con diseño mejorado"""
+        # Zona de campo del jugador (con efecto de sombra y gradiente)
         player_zone = pygame.Rect(SCREEN_WIDTH // 2 - CARD_WIDTH - 30, 
                                   SCREEN_HEIGHT // 2 + 10,
                                   CARD_WIDTH + 20, CARD_HEIGHT + 20)
         
-        # Fondo de la zona
-        pygame.draw.rect(self.screen, (30, 50, 30), player_zone, border_radius=5)
-        pygame.draw.rect(self.screen, DARK_GREEN, player_zone, 2, border_radius=5)
+        # Sombra de la zona
+        shadow_zone = player_zone.move(4, 4)
+        shadow_surf = pygame.Surface((shadow_zone.width, shadow_zone.height), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 80), shadow_surf.get_rect(), border_radius=8)
+        self.screen.blit(shadow_surf, shadow_zone)
         
-        # Zona de campo de la IA
+        # Fondo de la zona con gradiente
+        for i in range(player_zone.height):
+            ratio = i / player_zone.height
+            color = (
+                int(30 + 20 * ratio),
+                int(50 + 30 * ratio),
+                int(30 + 20 * ratio)
+            )
+            pygame.draw.line(self.screen, color, 
+                           (player_zone.left, player_zone.top + i),
+                           (player_zone.right, player_zone.top + i))
+        
+        pygame.draw.rect(self.screen, DARK_GREEN, player_zone, 3, border_radius=8)
+        pygame.draw.rect(self.screen, GOLD, player_zone, 1, border_radius=8)
+        
+        # Zona de campo de la IA (con efecto similar)
         ai_zone = pygame.Rect(SCREEN_WIDTH // 2 + 10,
                               SCREEN_HEIGHT // 2 - CARD_HEIGHT - 30,
                               CARD_WIDTH + 20, CARD_HEIGHT + 20)
         
-        # Fondo de la zona
-        pygame.draw.rect(self.screen, (30, 30, 50), ai_zone, border_radius=5)
-        pygame.draw.rect(self.screen, DARK_BLUE, ai_zone, 2, border_radius=5)
+        # Sombra de la zona
+        shadow_zone = ai_zone.move(4, 4)
+        shadow_surf = pygame.Surface((shadow_zone.width, shadow_zone.height), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 80), shadow_surf.get_rect(), border_radius=8)
+        self.screen.blit(shadow_surf, shadow_zone)
         
-        # Etiquetas
-        player_label = self.font_tiny.render("TU CAMPO", True, GREEN)
-        self.screen.blit(player_label, (player_zone.x, player_zone.bottom + 5))
+        # Fondo de la zona con gradiente azulado
+        for i in range(ai_zone.height):
+            ratio = i / ai_zone.height
+            color = (
+                int(30 + 20 * ratio),
+                int(30 + 20 * ratio),
+                int(50 + 30 * ratio)
+            )
+            pygame.draw.line(self.screen, color, 
+                           (ai_zone.left, ai_zone.top + i),
+                           (ai_zone.right, ai_zone.top + i))
         
-        ai_label = self.font_tiny.render("CAMPO IA", True, RED)
-        self.screen.blit(ai_label, (ai_zone.x, ai_zone.y - 20))
+        pygame.draw.rect(self.screen, DARK_BLUE, ai_zone, 3, border_radius=8)
+        pygame.draw.rect(self.screen, GOLD, ai_zone, 1, border_radius=8)
+        
+        # Etiquetas con fondo
+        player_label = self.font_tiny.render("TU CAMPO", True, WHITE)
+        label_bg = pygame.Surface((player_label.get_width() + 10, player_label.get_height() + 4), pygame.SRCALPHA)
+        pygame.draw.rect(label_bg, (0, 100, 0, 180), label_bg.get_rect(), border_radius=4)
+        self.screen.blit(label_bg, (player_zone.x, player_zone.bottom + 5))
+        self.screen.blit(player_label, (player_zone.x + 5, player_zone.bottom + 7))
+        
+        ai_label = self.font_tiny.render("CAMPO IA", True, WHITE)
+        label_bg = pygame.Surface((ai_label.get_width() + 10, ai_label.get_height() + 4), pygame.SRCALPHA)
+        pygame.draw.rect(label_bg, (100, 0, 0, 180), label_bg.get_rect(), border_radius=4)
+        self.screen.blit(label_bg, (ai_zone.x, ai_zone.y - 20))
+        self.screen.blit(ai_label, (ai_zone.x + 5, ai_zone.y - 18))
         
         # Cartas en el campo
         if self.human_field_sprite:

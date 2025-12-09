@@ -1,3 +1,4 @@
 # requirements.txt - Dependencias del proyecto
 
 pygame>=2.5.0
+Pillow>=10.0.0
