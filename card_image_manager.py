@@ -3,6 +3,7 @@
 
 import os
 import json
+import urllib.request
 import pygame
 from urllib.parse import quote
 from io import BytesIO
@@ -67,9 +68,6 @@ class CardImageManager:
         entorno con acceso a internet.
         """
         try:
-            # Intentar usar urllib (built-in de Python)
-            import urllib.request
-            
             url = API_URL.format(quote(card_name))
             response = urllib.request.urlopen(url, timeout=5)
             data = json.loads(response.read())
@@ -92,7 +90,7 @@ class CardImageManager:
                     self.cache_index[card_name] = img_path
                     self._save_cache_index()
                     return True
-        except Exception as e:
+        except Exception:
             # Si falla la descarga (esperado en este entorno), no hacer nada
             pass
         
@@ -133,9 +131,9 @@ class CardImageManager:
         # Gradiente simple para el área de imagen
         for i in range(img_area.height):
             alpha = i / img_area.height
-            color_start = tuple(int(c * 0.7) for c in bg_color)
-            color_end = tuple(int(c * 1.2) for c in bg_color)
-            color = tuple(int(color_start[j] + (color_end[j] - color_start[j]) * alpha) 
+            color_start = tuple(max(0, min(255, int(c * 0.7))) for c in bg_color)
+            color_end = tuple(max(0, min(255, int(c * 1.2))) for c in bg_color)
+            color = tuple(max(0, min(255, int(color_start[j] + (color_end[j] - color_start[j]) * alpha)))
                          for j in range(3))
             pygame.draw.line(surface, color, 
                            (img_area.left, img_area.top + i),

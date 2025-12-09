@@ -206,6 +206,36 @@ class Game:
         self.ai_field_sprite = None
         self.deck_preview_sprites = []
         self.ai_deck_preview_sprites = []
+        
+        # Pre-render gradients for performance
+        self.menu_background = self._create_menu_gradient()
+        self.game_background = self._create_game_gradient()
+    
+    def _create_menu_gradient(self):
+        """Pre-render menu background gradient for performance"""
+        surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        for y in range(SCREEN_HEIGHT):
+            ratio = y / SCREEN_HEIGHT
+            color = (
+                int(25 + 40 * ratio),
+                int(25 + 60 * ratio),
+                int(112 + 50 * ratio)
+            )
+            pygame.draw.line(surface, color, (0, y), (SCREEN_WIDTH, y))
+        return surface
+    
+    def _create_game_gradient(self):
+        """Pre-render game field gradient for performance"""
+        surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        for y in range(SCREEN_HEIGHT):
+            ratio = y / SCREEN_HEIGHT
+            color = (
+                int(15 + 20 * ratio),
+                int(50 + 30 * ratio),
+                int(15 + 20 * ratio)
+            )
+            pygame.draw.line(surface, color, (0, y), (SCREEN_WIDTH, y))
+        return surface
     
     def setup_menu_buttons(self):
         """Configura los botones del menú principal"""
@@ -663,15 +693,8 @@ class Game:
     
     def draw_menu(self):
         """Dibuja el menú principal con diseño mejorado"""
-        # Fondo con gradiente azul oscuro
-        for y in range(SCREEN_HEIGHT):
-            ratio = y / SCREEN_HEIGHT
-            color = (
-                int(25 + 40 * ratio),
-                int(25 + 60 * ratio),
-                int(112 + 50 * ratio)
-            )
-            pygame.draw.line(self.screen, color, (0, y), (SCREEN_WIDTH, y))
+        # Usar fondo pre-renderizado
+        self.screen.blit(self.menu_background, (0, 0))
         
         # Título con sombra
         title_text = "Yu-Gi-Oh! Forbidden Memories"
@@ -790,16 +813,8 @@ class Game:
     
     def draw_game(self):
         """Dibuja la pantalla del juego con diseño mejorado"""
-        # Fondo con gradiente verde (campo de duelo)
-        for y in range(SCREEN_HEIGHT):
-            # Gradiente de verde oscuro a verde claro
-            ratio = y / SCREEN_HEIGHT
-            color = (
-                int(15 + 20 * ratio),
-                int(50 + 30 * ratio),
-                int(15 + 20 * ratio)
-            )
-            pygame.draw.line(self.screen, color, (0, y), (SCREEN_WIDTH, y))
+        # Usar fondo pre-renderizado
+        self.screen.blit(self.game_background, (0, 0))
         
         # Línea divisoria del campo con efecto
         pygame.draw.line(self.screen, GOLD, (0, SCREEN_HEIGHT // 2), 
@@ -976,18 +991,8 @@ class Game:
         pygame.draw.rect(shadow_surf, (0, 0, 0, 80), shadow_surf.get_rect(), border_radius=8)
         self.screen.blit(shadow_surf, shadow_zone)
         
-        # Fondo de la zona con gradiente
-        for i in range(player_zone.height):
-            ratio = i / player_zone.height
-            color = (
-                int(30 + 20 * ratio),
-                int(50 + 30 * ratio),
-                int(30 + 20 * ratio)
-            )
-            pygame.draw.line(self.screen, color, 
-                           (player_zone.left, player_zone.top + i),
-                           (player_zone.right, player_zone.top + i))
-        
+        # Fondo de la zona (color sólido con pequeño gradiente)
+        pygame.draw.rect(self.screen, (40, 70, 40), player_zone, border_radius=8)
         pygame.draw.rect(self.screen, DARK_GREEN, player_zone, 3, border_radius=8)
         pygame.draw.rect(self.screen, GOLD, player_zone, 1, border_radius=8)
         
@@ -1002,18 +1007,8 @@ class Game:
         pygame.draw.rect(shadow_surf, (0, 0, 0, 80), shadow_surf.get_rect(), border_radius=8)
         self.screen.blit(shadow_surf, shadow_zone)
         
-        # Fondo de la zona con gradiente azulado
-        for i in range(ai_zone.height):
-            ratio = i / ai_zone.height
-            color = (
-                int(30 + 20 * ratio),
-                int(30 + 20 * ratio),
-                int(50 + 30 * ratio)
-            )
-            pygame.draw.line(self.screen, color, 
-                           (ai_zone.left, ai_zone.top + i),
-                           (ai_zone.right, ai_zone.top + i))
-        
+        # Fondo de la zona (color sólido)
+        pygame.draw.rect(self.screen, (40, 40, 70), ai_zone, border_radius=8)
         pygame.draw.rect(self.screen, DARK_BLUE, ai_zone, 3, border_radius=8)
         pygame.draw.rect(self.screen, GOLD, ai_zone, 1, border_radius=8)
         
