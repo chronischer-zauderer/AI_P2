@@ -88,7 +88,7 @@ class MinimaxAI:
         # Si el juego ya terminó, retornamos un valor extremo
         if state.game_over:
             if state.winner and state.winner.is_ai:
-                return 100000   # ¡Victoria! Máximo puntaje posible
+                return 100000   # Victoria Máximo puntaje posible
             elif state.winner:
                 return -100000  # Derrota. Mínimo puntaje posible
             return 0            # Empate (raro pero posible)
@@ -122,7 +122,7 @@ class MinimaxAI:
             score -= state.human.field.atk * 0.3
             
         elif state.ai.field and state.human.field:
-            # CASO C: AMBOS tienen carta - ¡Habrá batalla!
+            # CASO C: AMBOS tienen carta 
             # Calculamos quién GANARÍA la batalla (incluyendo bonus de estrellas)
             
             # get_battle_value() calcula: valor_base + bonus_estrella

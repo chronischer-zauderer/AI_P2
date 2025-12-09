@@ -257,10 +257,10 @@ class Game:
         start_y = 290
         spacing = 65
         
-        self.btn_play = Button(center_x - btn_width//2, start_y, btn_width, btn_height, "🎮 JUGAR", GREEN)
-        self.btn_config = Button(center_x - btn_width//2, start_y + spacing, btn_width, btn_height, "⚙️ CONFIGURACIÓN", BLUE)
-        self.btn_rules = Button(center_x - btn_width//2, start_y + spacing * 2, btn_width, btn_height, "📖 REGLAS", PURPLE)
-        self.btn_exit = Button(center_x - btn_width//2, start_y + spacing * 3, btn_width, btn_height, "🚪 SALIR", RED)
+        self.btn_play = Button(center_x - btn_width//2, start_y, btn_width, btn_height, " JUGAR", GREEN)
+        self.btn_config = Button(center_x - btn_width//2, start_y + spacing, btn_width, btn_height, " CONFIGURACIÓN", BLUE)
+        self.btn_rules = Button(center_x - btn_width//2, start_y + spacing * 2, btn_width, btn_height, " REGLAS", PURPLE)
+        self.btn_exit = Button(center_x - btn_width//2, start_y + spacing * 3, btn_width, btn_height, " SALIR", RED)
         
         # Botones de configuración - posiciones centradas en el panel
         panel_center_y = SCREEN_HEIGHT // 2
@@ -539,7 +539,7 @@ class Game:
         
         # === FASE DE ROBO DE LA IA ===
         self.current_phase = "DRAW_PHASE"
-        self.message = "🎴 Turno de la IA - Fase de Robo"
+        self.message = " Turno de la IA - Fase de Robo"
         self.draw_game()
         pygame.display.flip()
         pygame.time.wait(800)
@@ -547,7 +547,7 @@ class Game:
         # Mostrar que robó una carta (ya se robó en next_turn)
         if self.game_state.ai.hand:
             last_card = self.game_state.ai.hand[-1]
-            self.message = f"🎴 La IA robó: {last_card.name}"
+            self.message = f"La IA robó: {last_card.name}"
             self.update_card_sprites()
             self.draw_game()
             pygame.display.flip()
@@ -555,7 +555,7 @@ class Game:
         
         # === FASE PRINCIPAL DE LA IA ===
         self.current_phase = "MAIN_PHASE"
-        self.message = "🤔 La IA está pensando..."
+        self.message = "La IA está pensando..."
         self.draw_game()
         pygame.display.flip()
         pygame.time.wait(500)
@@ -577,7 +577,7 @@ class Game:
                 
                 result = self.game_state.ai.fuse_cards(idx1, idx2)
                 if result:
-                    self.message = f"✨ ¡Fusión! La IA obtuvo {result.name} (ATK: {result.atk})"
+                    self.message = f" ¡Fusión! La IA obtuvo {result.name} (ATK: {result.atk})"
                     self.update_card_sprites()
                     self.draw_game()
                     pygame.display.flip()
@@ -593,7 +593,7 @@ class Game:
                 position = best_action.get("position", "ATK")
                 
                 if card_to_play:
-                    self.message = f"📤 La IA invoca: {card_to_play.name} en {position}"
+                    self.message = f" La IA invoca: {card_to_play.name} en {position}"
                     self.draw_game()
                     pygame.display.flip()
                     pygame.time.wait(800)
@@ -607,7 +607,7 @@ class Game:
                     pygame.display.flip()
                     pygame.time.wait(800)
         else:
-            self.message = "🤷 La IA no puede hacer ningún movimiento"
+            self.message = " La IA no puede hacer ningún movimiento"
             self.draw_game()
             pygame.display.flip()
             pygame.time.wait(1000)
@@ -661,7 +661,7 @@ class Game:
                 drawn = self.game_state.human.hand[-1]
                 self.drawn_card = drawn
                 self.show_drawn_card = True
-                self.message = f"🎴 ¡Tu turno! Robaste: {drawn.name}"
+                self.message = f" ¡Tu turno! Robaste: {drawn.name}"
                 self.update_card_sprites()
                 self.draw_game()
                 pygame.display.flip()
@@ -696,14 +696,14 @@ class Game:
         print("-"*60)
         
         if fusions:
-            print("✨ FUSIONES POSIBLES:")
+            print(" FUSIONES POSIBLES:")
             for idx1, idx2, result in fusions:
                 card1 = hand[idx1]
                 card2 = hand[idx2]
                 print(f"  → [{idx1+1}] {card1.name} + [{idx2+1}] {card2.name}")
                 print(f"    = {result.name} (ATK:{result.atk}/DEF:{result.defense})")
         else:
-            print("❌ No hay fusiones posibles con tu mano actual.")
+            print(" No hay fusiones posibles con tu mano actual.")
         
         print("="*60 + "\n")
     
@@ -765,7 +765,7 @@ class Game:
         self.screen.blit(info, info_rect)
         
         # Stats del juego en la esquina
-        stats_text = self.font_tiny.render(f"📊 {len(CARD_DATABASE)} monstruos • {len(FUSIONS)} fusiones", True, LIGHT_GRAY)
+        stats_text = self.font_tiny.render(f" {len(CARD_DATABASE)} monstruos • {len(FUSIONS)} fusiones", True, LIGHT_GRAY)
         self.screen.blit(stats_text, (20, SCREEN_HEIGHT - 35))
     
     def draw_config(self):
@@ -791,7 +791,7 @@ class Game:
         self.screen.blit(panel, (panel_x, panel_y))
         
         # Título
-        title = self.font_large.render("⚙️ Configuración", True, GOLD)
+        title = self.font_large.render(" Configuración", True, GOLD)
         title_rect = title.get_rect(centerx=SCREEN_WIDTH // 2, y=panel_y + 40)
         self.screen.blit(title, title_rect)
         
@@ -834,7 +834,7 @@ class Game:
             self.screen.fill(DARK_BLUE)
         
         # Título
-        title = self.font_large.render("📖 Reglas del Juego", True, GOLD)
+        title = self.font_large.render(" Reglas del Juego", True, GOLD)
         title_rect = title.get_rect(centerx=SCREEN_WIDTH // 2, y=30)
         self.screen.blit(title, title_rect)
         
@@ -845,19 +845,19 @@ class Game:
         self.screen.blit(panel_left, (20, 80))
 
         rules = [
-            "🎮 El humano siempre empieza primero",
-            "❤️ Cada jugador comienza con 8000 LP",
-            "🎴 Se roban 5 cartas al inicio y 1 por turno",
-            "⚔️ Solo puede haber 1 carta en el campo",
-            "🛡️ Las cartas pueden estar en ATK o DEF",
-            "⭐ Cada carta tiene 2 estrellas guardianas",
-            "✨ Ventaja de estrella = +500 ATK/DEF",
-            "💥 ATK > DEF del oponente = daño a LP",
-            "🛡️ Carta en DEF no recibe daño directo",
-            "🔮 Se pueden fusionar 2 cartas de la mano",
-            "👁️ TODAS las cartas son visibles",
-            "🤖 La IA usa Minimax con poda alfa-beta",
-            f"📊 Dataset: {len(CARD_DATABASE)} monstruos, {len(FUSIONS)} fusiones",
+            " El humano siempre empieza primero",
+            " Cada jugador comienza con 8000 LP",
+            " Se roban 5 cartas al inicio y 1 por turno",
+            " Solo puede haber 1 carta en el campo",
+            " Las cartas pueden estar en ATK o DEF",
+            " Cada carta tiene 2 estrellas guardianas",
+            " Ventaja de estrella = +500 ATK/DEF",
+            " ATK > DEF del oponente = daño a LP",
+            " Carta en DEF no recibe daño directo",
+            " Se pueden fusionar 2 cartas de la mano",
+            " TODAS las cartas son visibles",
+            " La IA usa Minimax con poda alfa-beta",
+            f"Dataset: {len(CARD_DATABASE)} monstruos, {len(FUSIONS)} fusiones",
         ]
         
         y = 100
@@ -1053,10 +1053,10 @@ class Game:
         pygame.draw.rect(human_stats_bg, GREEN, human_stats_bg.get_rect(), 1, border_radius=8)
         self.screen.blit(human_stats_bg, (stats_left_x, human_stats_y))
         
-        human_deck = self.font_tiny.render(f"📚 Mazo: {len(self.game_state.human.deck)}", True, WHITE)
+        human_deck = self.font_tiny.render(f" Mazo: {len(self.game_state.human.deck)}", True, WHITE)
         self.screen.blit(human_deck, (stats_left_x + 10, human_stats_y + 10))
         
-        human_grave = self.font_tiny.render(f"💀 Cementerio: {len(self.game_state.human.graveyard)}", True, GRAY)
+        human_grave = self.font_tiny.render(f" Cementerio: {len(self.game_state.human.graveyard)}", True, GRAY)
         self.screen.blit(human_grave, (stats_left_x + 10, human_stats_y + 32))
         
         # --- STATS DE LA IA (Derecha arriba) ---
@@ -1068,10 +1068,10 @@ class Game:
         pygame.draw.rect(ai_stats_bg, RED, ai_stats_bg.get_rect(), 1, border_radius=8)
         self.screen.blit(ai_stats_bg, (stats_right_x, ai_stats_y))
         
-        ai_deck = self.font_tiny.render(f"📚 Mazo: {len(self.game_state.ai.deck)}", True, WHITE)
+        ai_deck = self.font_tiny.render(f" Mazo: {len(self.game_state.ai.deck)}", True, WHITE)
         self.screen.blit(ai_deck, (stats_right_x + 10, ai_stats_y + 10))
         
-        ai_grave = self.font_tiny.render(f"💀 Cementerio: {len(self.game_state.ai.graveyard)}", True, GRAY)
+        ai_grave = self.font_tiny.render(f" Cementerio: {len(self.game_state.ai.graveyard)}", True, GRAY)
         self.screen.blit(ai_grave, (stats_right_x + 10, ai_stats_y + 32))
     
     def draw_field(self):
@@ -1113,7 +1113,7 @@ class Game:
         pygame.draw.rect(ai_label_bg, (100, 0, 0, 200), ai_label_bg.get_rect(), border_radius=5)
         self.screen.blit(ai_label_bg, (ai_zone.centerx - 50, ai_zone.y - 30))
         
-        ai_label = self.font_small.render("🤖 CAMPO IA", True, WHITE)
+        ai_label = self.font_small.render(" CAMPO IA", True, WHITE)
         ai_label_rect = ai_label.get_rect(centerx=ai_zone.centerx, y=ai_zone.y - 28)
         self.screen.blit(ai_label, ai_label_rect)
         
@@ -1123,7 +1123,7 @@ class Game:
         pygame.draw.rect(ai_lp_bg, RED, ai_lp_bg.get_rect(), 2, border_radius=8)
         self.screen.blit(ai_lp_bg, (ai_zone.right + 20, ai_zone.centery - 17))
         
-        ai_lp = self.font_medium.render(f"❤️ {self.game_state.ai.life_points}", True, WHITE)
+        ai_lp = self.font_medium.render(f" {self.game_state.ai.life_points}", True, WHITE)
         self.screen.blit(ai_lp, (ai_zone.right + 30, ai_zone.centery - 12))
         
         # === INDICADOR VS EN EL CENTRO ===
@@ -1173,7 +1173,7 @@ class Game:
         pygame.draw.rect(player_label_bg, (0, 80, 0, 200), player_label_bg.get_rect(), border_radius=5)
         self.screen.blit(player_label_bg, (player_zone.centerx - 55, player_zone.bottom + 5))
         
-        player_label = self.font_small.render("🎮 TU CAMPO", True, WHITE)
+        player_label = self.font_small.render(" TU CAMPO", True, WHITE)
         player_label_rect = player_label.get_rect(centerx=player_zone.centerx, y=player_zone.bottom + 7)
         self.screen.blit(player_label, player_label_rect)
         
@@ -1183,7 +1183,7 @@ class Game:
         pygame.draw.rect(player_lp_bg, GREEN, player_lp_bg.get_rect(), 2, border_radius=8)
         self.screen.blit(player_lp_bg, (player_zone.left - 140, player_zone.centery - 17))
         
-        player_lp = self.font_medium.render(f"❤️ {self.game_state.human.life_points}", True, WHITE)
+        player_lp = self.font_medium.render(f" {self.game_state.human.life_points}", True, WHITE)
         self.screen.blit(player_lp, (player_zone.left - 130, player_zone.centery - 12))
         
         # === ACTUALIZAR POSICIONES DE SPRITES Y DIBUJAR ===
@@ -1199,7 +1199,7 @@ class Game:
             # Info de estrella activa
             star = self.game_state.human.field.selected_star
             star_color = STAR_COLORS.get(star, WHITE)
-            star_info = self.font_tiny.render(f"⭐ {star}", True, star_color)
+            star_info = self.font_tiny.render(f" {star}", True, star_color)
             self.screen.blit(star_info, (player_zone.right + 10, player_zone.y + 10))
         
         # Carta de la IA
@@ -1214,7 +1214,7 @@ class Game:
             # Info de estrella activa
             star = self.game_state.ai.field.selected_star
             star_color = STAR_COLORS.get(star, WHITE)
-            star_info = self.font_tiny.render(f"⭐ {star}", True, star_color)
+            star_info = self.font_tiny.render(f" {star}", True, star_color)
             self.screen.blit(star_info, (ai_zone.left - 80, ai_zone.y + 10))
         
         # === INFO DE BATALLA (si aplica) ===
@@ -1244,7 +1244,7 @@ class Game:
         self.screen.blit(info_panel, (info_panel_x, info_panel_y))
         
         # Título
-        title = self.font_small.render("⚔️ BATALLA ⚔️", True, GOLD)
+        title = self.font_small.render(" BATALLA!! ", True, GOLD)
         title_rect = title.get_rect(centerx=info_panel_x + info_panel_width // 2, y=info_panel_y + 10)
         self.screen.blit(title, title_rect)
         
@@ -1272,7 +1272,7 @@ class Game:
         if star_bonus != 0:
             bonus_color = GREEN if star_bonus > 0 else RED
             bonus_sign = "+" if star_bonus > 0 else ""
-            bonus_text = self.font_tiny.render(f"⭐ Bonus: {bonus_sign}{star_bonus}", True, bonus_color)
+            bonus_text = self.font_tiny.render(f" Bonus: {bonus_sign}{star_bonus}", True, bonus_color)
             self.screen.blit(bonus_text, (info_panel_x + 15, y_offset))
             
             # Explicación
@@ -1283,7 +1283,7 @@ class Game:
             self.screen.blit(explain, (info_panel_x + 15, y_offset + 18))
             y_offset += 40
         else:
-            neutral = self.font_tiny.render("⭐ Sin bonus", True, GRAY)
+            neutral = self.font_tiny.render(" Sin bonus", True, GRAY)
             self.screen.blit(neutral, (info_panel_x + 15, y_offset))
             y_offset += 25
         
@@ -1563,7 +1563,7 @@ class Game:
                         self.card_played_this_turn = False
                         self.waiting_for_battle = False
                         self.current_phase = "MAIN_PHASE"  # Volver a fase principal
-                        self.message = "↩️ Jugada deshecha - Fase Principal"
+                        self.message = "↩ Jugada deshecha - Fase Principal"
                         self.update_card_sprites()
                 elif self.btn_end_turn.is_clicked(pos):
                     self.end_turn()
